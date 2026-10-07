@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+# Agentic coding harness - Python dependencies
+# Target runtime: Python 3.13.3
+# Install:  python -m venv .venv ; .\.venv\Scripts\Activate.ps1 ; pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+
+langchain
+langchain-core
+langchain-openai
+
+# --- Multi-Agent Orchestration ---
+pyautogen
+
+# --- LLM / provider client ---
+openai
+
+# --- Data models & validation ---
+pydantic>=2          # Pydantic v2 - typed tool args & structured-output validation
+
+# --- Configuration ---
+PyYAML               # Read config.yaml / models.yaml / settings.yaml
+
+# --- Resilience ---
+tenacity             # Robust retry / backoff
+
+# --- Testing ---
+pytest

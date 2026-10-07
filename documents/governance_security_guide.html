@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Governance & Security Architecture Guide — BareMinimum Harness</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #0f172a;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --heading-color: #ffffff;
+            --border-color: #334155;
+            --code-bg: #090d16;
+            --code-text: #e2e8f0;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-orange: #fb923c;
+            --accent-red: #f87171;
+            --critical-bg: #450a0a;
+            --critical-border: #991b1b;
+            --critical-text: #fca5a5;
+            --high-bg: #431407;
+            --high-border: #9a3412;
+            --high-text: #fdba74;
+            --medium-bg: #3f2c06;
+            --medium-border: #854d0e;
+            --medium-text: #fde047;
+            --success-bg: #052e16;
+            --success-border: #166534;
+            --success-text: #86efac;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.65;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 300px;
+            background-color: #0b1120;
+            color: var(--text-muted);
+            padding: 2rem 1.25rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            font-size: 1.15rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            display: block;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #1e293b;
+            color: var(--accent-blue);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 300px;
+            padding: 3rem 4rem;
+            max-width: 1150px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1.75rem;
+        }
+
+        header h1 {
+            font-size: 2.3rem;
+            color: var(--heading-color);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        header p.subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 0.4rem;
+        }
+
+        .badge-critical {
+            background-color: var(--critical-bg);
+            border: 1px solid var(--critical-border);
+            color: var(--critical-text);
+        }
+
+        .badge-high {
+            background-color: var(--high-bg);
+            border: 1px solid var(--high-border);
+            color: var(--high-text);
+        }
+
+        .badge-medium {
+            background-color: var(--medium-bg);
+            border: 1px solid var(--medium-border);
+            color: var(--medium-text);
+        }
+
+        .badge-success {
+            background-color: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
+        }
+
+        section {
+            margin-bottom: 3.5rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 1.7rem;
+            color: var(--heading-color);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+            margin: 1.75rem 0 0.85rem 0;
+        }
+
+        h4 {
+            font-size: 1.05rem;
+            color: #e2e8f0;
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: #cbd5e1;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Callout boxes */
+        .callout {
+            padding: 1.25rem 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+        }
+
+        .callout-critical {
+            background-color: var(--critical-bg);
+            border-color: var(--accent-red);
+            color: var(--critical-text);
+        }
+
+        .callout-warning {
+            background-color: var(--high-bg);
+            border-color: var(--accent-orange);
+            color: var(--high-text);
+        }
+
+        .callout-success {
+            background-color: var(--success-bg);
+            border-color: var(--accent-green);
+            color: var(--success-text);
+        }
+
+        /* Diagrams */
+        .diagram-container {
+            background: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .svg-diagram {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "Fira Code", "Consolas", "Courier New", monospace;
+            font-size: 0.88rem;
+            margin: 1.25rem 0;
+            line-height: 1.55;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: "Fira Code", "Consolas", "Courier New", monospace;
+            background-color: #1e293b;
+            color: #38bdf8;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 0.9rem 1.1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.92rem;
+        }
+
+        th {
+            background-color: #0f172a;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) {
+            background-color: #162032;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar">
+        <h2>Security & Governance</h2>
+        <ul>
+            <li><a href="#overview">1. Executive Summary</a></li>
+            <li><a href="#audit-matrix">2. Governance & Security Status Matrix</a></li>
+            <li><a href="#pipeline-diagram">3. Guardrail Architecture Diagram</a></li>
+            <li><a href="#implemented-features">4. Existing / Implemented Features</a></li>
+            <li><a href="#remaining-gaps">5. Remaining Security Gaps & Enhancements</a></li>
+            <li><a href="#symlink-sandboxing">5.1 Workspace Sandboxing & Symlink Defense</a></li>
+            <li><a href="#code-references">6. Verification & Implementation Code</a></li>
+            <li><a href="#roadmap">7. Phased Roadmap & Checklist</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header>
+            <h1>Governance & Security Status Guide — BareMinimum Harness</h1>
+            <p class="subtitle">Comprehensive Audit of Implemented Security Mechanisms and Remaining Governance Enhancements</p>
+        </header>
+
+        <!-- Section 1: Executive Summary -->
+        <section id="overview">
+            <h2>1. Executive Summary</h2>
+            <p>
+                The <code>bareminimum</code> harness is a model-agnostic, lightweight agentic framework capable of autonomous codebase exploration and file modification. It combines Microsoft AutoGen sub-agent patterns, parallel tool execution, context compaction memory, and serialized file updates.
+            </p>
+            <p>
+                To support enterprise deployment, key <strong>governance and security features</strong> are already built directly into the core framework:
+            </p>
+            <ul>
+                <li><strong>Indirect Prompt Injection Defense:</strong> Keyword scanning and boundary encapsulation with <code>&lt;untrusted_file_content&gt;</code> XML tags.</li>
+                <li><strong>Human-in-the-Loop (HITL) Write Approvals:</strong> Interactive diff previews and user confirmation gates (<code>y/N</code>) for disk mutations.</li>
+                <li><strong>Structured Audit Logging & Masking:</strong> JSON logging with regex-based redaction of Bearer tokens, secrets, API keys, and email addresses.</li>
+                <li><strong>LLM Retry & Backoff Engine:</strong> Exponential backoff retry loop handling transient API errors and rate limit throttling.</li>
+                <li><strong>Runtime Environment Secret Overrides:</strong> Environment variable precedence over configuration files for OAuth credentials.</li>
+                <li><strong>Context Memory Compaction & Cost Tracking:</strong> Automatic conversation history summarization and cumulative USD cost tracking.</li>
+                <li><strong>Multi-Agent Execution Concurrency Safety:</strong> Parallel read task dispatch alongside mutex-locked sequential write operations.</li>
+                <li><strong>Workspace Path Containment:</strong> Path containment checks ensuring tool calls stay within <code>HARNESS_WORKSPACE</code>.</li>
+            </ul>
+            <p>
+                This document details all <strong>currently implemented features</strong> alongside the <strong>remaining gaps and planned enhancements</strong> required for full enterprise production compliance.
+            </p>
+        </section>
+
+        <!-- Section 2: Audit Matrix -->
+        <section id="audit-matrix">
+            <h2>2. Governance & Security Feature Status Matrix</h2>
+            <p>Comprehensive overview of safety mechanisms, implementation locations, current capabilities, and outstanding enhancements:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mechanism / Feature Area</th>
+                        <th>Status</th>
+                        <th>Implementation Location</th>
+                        <th>Current Capability / Outstanding Work</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1. Indirect Prompt Injection Filter</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>tools/tool_output_sanitizer.py</code><br><code>tools/registry.py</code><br><code>orchestrator/tools.py</code></td>
+                        <td>Detects injection phrases (e.g. <i>"system override"</i>, <i>"ignore previous instructions"</i>), prepends security warnings, escapes inner tags, and encapsulates output in <code>&lt;untrusted_file_content&gt;</code> XML tags.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2. Human-in-the-Loop (HITL) Write Controls</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>tools/write_file/__init__.py</code></td>
+                        <td>Generates unified diff previews (<code>difflib.unified_diff</code>) before writes, requires interactive user approval (<code>y/N</code>), supports non-destructive <code>dry_run</code> simulation, and raises <code>PermissionError</code> on rejection or non-interactive streams.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3. Structured Audit Logging & PII/Secret Masking</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>log/log.py</code></td>
+                        <td>Outputs structured JSON log records with <code>MaskingJsonFormatter</code>, automatically redacting Bearer tokens, secrets, passwords, API keys, and email addresses.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4. Exponential Backoff & Retry Strategy</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>llm/llm_client.py</code></td>
+                        <td>Handles transient API errors and rate limit throttling using exponential backoff scaling (<code>RETRY.MAX_RETRIES</code>, <code>INITIAL_BACKOFF</code>, <code>MAX_BACKOFF</code>, <code>BACKOFF_MULTIPLIER</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5. Environment Variable Secret Overrides</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>auth/oauth.py</code></td>
+                        <td>Prioritizes <code>LLM_OAUTH_CLIENT_ID</code>, <code>OAUTH_CLIENT_SECRET</code>, <code>OAUTH_TOKEN_URL</code>, and <code>LLM_OAUTH_SCOPE</code> / <code>OAUTH_SCOPE</code> environment variables over configuration file defaults.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6. Context Window Memory Compaction</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>memory/compaction.py</code><br><code>loop/loop.py</code></td>
+                        <td>Monitors conversation token length and compacts older assistant and tool messages into structured summary notes when token usage exceeds configured thresholds (default: 70%).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7. Token Expenditure & Monetary Cost ($ USD) Tracking</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>memory/token_counter.py</code><br><code>loop/loop.py</code></td>
+                        <td>Tracks prompt and completion tokens per turn using <code>tiktoken</code> and calculates cumulative USD cost using configured per-model pricing in <code>AgentResult</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>8. Multi-Agent Concurrency & Mutex Write Safety</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>orchestrator/orchestrator.py</code><br><code>orchestrator/tools.py</code></td>
+                        <td>Executes read tasks concurrently using <code>asyncio.Semaphore(10)</code> while strictly serializing write tasks across sub-agents using an <code>asyncio.Lock()</code> write mutex.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>9. Basic Workspace Path Containment</strong></td>
+                        <td><span class="badge badge-success">IMPLEMENTED</span></td>
+                        <td><code>tools/_common.py</code></td>
+                        <td>Resolves paths against <code>HARNESS_WORKSPACE</code> / root and enforces relative path validation (<code>candidate.relative_to(root)</code>) to prevent standard <code>../../</code> traversal attacks.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>10. Symlink Hardening & Protected Path Blocking</strong></td>
+                        <td><span class="badge badge-high">PARTIAL</span></td>
+                        <td><code>tools/_common.py</code></td>
+                        <td>Basic path relative checks exist, but strict symlink dereferencing (<code>resolve(strict=False)</code>), non-existent parent directory checks, and protected path blocking (<code>.git</code>, <code>.env</code>, <code>.venv</code>, SSH keys) need completion.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>11. Session Dollar Cost ($) Budget Capping</strong></td>
+                        <td><span class="badge badge-medium">PARTIAL</span></td>
+                        <td><code>loop/loop.py</code></td>
+                        <td><code>MAX_TURNS</code> turn limits and total session USD cost calculations exist, but a hard monetary budget cap (e.g. max $2.00 per run) to automatically abort execution is needed.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>12. Complete Secret Revocation & Repository Sanitization</strong></td>
+                        <td><span class="badge badge-critical">GAP / PLANNED</span></td>
+                        <td><code>resources/config.yaml</code></td>
+                        <td>Default credential entries in <code>config.yaml</code> must be cleared, replaced with environment variable placeholders, and accompanied by a <code>config.yaml.example</code> template and <code>.env</code> loader.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>13. Role-Based Access Control (RBAC) & Tool Scoping</strong></td>
+                        <td><span class="badge badge-medium">GAP / PLANNED</span></td>
+                        <td><code>tools/registry.py</code></td>
+                        <td>Execution profiles (e.g. <code>READ_ONLY</code>, <code>DEVELOPER</code>, <code>ADMIN</code>) are needed to restrict available tools based on session scope or user permissions.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>14. Shell / Subprocess Execution Isolation</strong></td>
+                        <td><span class="badge badge-medium">GAP / PLANNED</span></td>
+                        <td>Future Terminal Tools</td>
+                        <td>Command allowlisting/denylisting, mandatory command timeouts, and Docker/container isolation if shell execution tools (<code>run_terminal</code>) are added in the future.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>15. Supply Chain & Dependency Locking</strong></td>
+                        <td><span class="badge badge-medium">GAP / PLANNED</span></td>
+                        <td><code>requirements.txt</code></td>
+                        <td>Hash-pinned dependency lockfiles (<code>pip-compile --generate-hashes</code> / <code>uv.lock</code>) and automated CI SAST security scanning integration.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 3: Architecture Diagram -->
+        <section id="pipeline-diagram">
+            <h2>3. Guardrail Architecture Diagram</h2>
+            <p>
+                The diagram below illustrates how existing security guardrails (Input Sanitization, HITL Approval Gate, Retry Backoff Engine, Context Compactor, Audit Logger) protect the core agentic loop:
+            </p>
+
+            <div class="diagram-container">
+                <svg class="svg-diagram" width="800" height="520" viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg">
+                    <!-- User Prompt -->
+                    <rect x="300" y="15" width="200" height="45" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+                    <text x="400" y="42" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle">User Request / CLI Input</text>
+
+                    <path d="M 400 60 L 400 90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <!-- Layer 1: Auth & Env Secrets -->
+                    <rect x="180" y="90" width="440" height="50" rx="8" fill="#0f172a" stroke="#eab308" stroke-width="2" />
+                    <text x="400" y="112" fill="#fde047" font-size="13" font-weight="bold" text-anchor="middle">Layer 1: Credentials & Auth (auth/oauth.py) [EXISTING]</text>
+                    <text x="400" y="130" fill="#94a3b8" font-size="11" text-anchor="middle">Env var overrides (LLM_OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, LLM_OAUTH_SCOPE)</text>
+
+                    <path d="M 400 140 L 400 170" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <!-- Layer 2: Input Guardrails & Prompt Injection -->
+                    <rect x="180" y="170" width="440" height="50" rx="8" fill="#0f172a" stroke="#22c55e" stroke-width="2" />
+                    <text x="400" y="192" fill="#86efac" font-size="13" font-weight="bold" text-anchor="middle">Layer 2: Prompt Injection Filter & XML Encapsulation [EXISTING]</text>
+                    <text x="400" y="210" fill="#94a3b8" font-size="11" text-anchor="middle">tools/tool_output_sanitizer.py &lt;untrusted_file_content&gt;</text>
+
+                    <path d="M 400 220 L 400 250" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <!-- Core Agent Loop -->
+                    <rect x="220" y="250" width="360" height="55" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2" />
+                    <text x="400" y="275" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">BareMinimum Agent Loop & Compactor [EXISTING]</text>
+                    <text x="400" y="295" fill="#93c5fd" font-size="11" text-anchor="middle">memory/compaction.py + loop/loop.py (MAX_TURNS & Token Tracker)</text>
+
+                    <!-- Split to Read / Write Guards -->
+                    <path d="M 310 305 L 210 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+                    <path d="M 490 305 L 590 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <!-- Read Tool Guard -->
+                    <rect x="80" y="350" width="260" height="65" rx="8" fill="#032b45" stroke="#38bdf8" stroke-width="2" />
+                    <text x="210" y="375" fill="#7dd3fc" font-size="13" font-weight="bold" text-anchor="middle">Parallel Reads & Path Sandbox</text>
+                    <text x="210" y="395" fill="#94a3b8" font-size="11" text-anchor="middle">tools/_common.py + orchestrator/tools.py (Semaphore)</text>
+
+                    <!-- Write Tool Guard (HITL) -->
+                    <rect x="460" y="350" width="260" height="65" rx="8" fill="#052e16" stroke="#22c55e" stroke-width="2" />
+                    <text x="590" y="375" fill="#86efac" font-size="13" font-weight="bold" text-anchor="middle">HITL & Mutex Write Gate [EXISTING]</text>
+                    <text x="590" y="395" fill="#94a3b8" font-size="11" text-anchor="middle">write_file diff preview, dry_run, asyncio.Lock mutex</text>
+
+                    <path d="M 210 415 L 310 460" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+                    <path d="M 590 415 L 490 460" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+                    <!-- Layer 3: Audit Logging & Retry Backoff -->
+                    <rect x="180" y="460" width="440" height="50" rx="8" fill="#052e16" stroke="#22c55e" stroke-width="2" />
+                    <text x="400" y="482" fill="#86efac" font-size="13" font-weight="bold" text-anchor="middle">Layer 3: Audit Logger & Backoff Retry Engine [EXISTING]</text>
+                    <text x="400" y="500" fill="#94a3b8" font-size="11" text-anchor="middle">log/log.py MaskingJsonFormatter + llm/llm_client.py exponential backoff</text>
+
+                    <!-- Arrow Definitions -->
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Section 4: Currently Implemented Features -->
+        <section id="implemented-features">
+            <h2>4. Governance & Security Features Currently Existing in BareMinimum</h2>
+
+            <div class="callout callout-success">
+                <strong>Status:</strong> The following 8 security and governance capabilities are fully implemented in the codebase with unit test coverage.
+            </div>
+
+            <h3>4.1 Indirect Prompt Injection Detection & XML Boundary Encapsulation</h3>
+            <p>
+                <strong>Location:</strong> <code>tools/tool_output_sanitizer.py</code>, <code>tools/registry.py</code>, <code>orchestrator/tools.py</code>
+            </p>
+            <p>
+                When codebase files or search results are fetched via tools, raw outputs are sanitized before being placed into the LLM message history:
+            </p>
+            <ul>
+                <li><strong>Pattern Matching:</strong> Scans content against <code>INJECTION_PATTERNS</code> (e.g. <i>"ignore all previous instructions"</i>, <i>"system override"</i>, <i>"you are now an unrestricted..."</i>, <i>"disregard above"</i>).</li>
+                <li><strong>Security Warning Injection:</strong> Prepends <code>[SECURITY WARNING: Possible prompt injection detected in file content]</code> whenever a matching pattern is triggered.</li>
+                <li><strong>Boundary Tag Protection:</strong> Wraps output in explicit <code>&lt;untrusted_file_content path="..."&gt;...&lt;/untrusted_file_content&gt;</code> XML tags, escaping inner closing tags to prevent model boundary escapes.</li>
+            </ul>
+
+            <h3>4.2 Human-in-the-Loop (HITL) Controls & Diff Previews</h3>
+            <p>
+                <strong>Location:</strong> <code>tools/write_file/__init__.py</code>
+            </p>
+            <p>
+                To prevent accidental, unauthorized, or malformed codebase modifications, all file modification tools (<code>write_file</code> and its alias <code>create_file</code>) enforce Human-in-the-Loop (HITL) verification and approval gates before committing changes to disk.
+            </p>
+
+            <h4>4.2.1 Core Implementation Mechanics</h4>
+            <ul>
+                <li><strong>Unified Diff Generation:</strong> Evaluates proposed updates against existing file content using Python's <code>difflib.unified_diff</code>. The diff compares <code>a/&lt;rel_path&gt;</code> and <code>b/&lt;rel_path&gt;</code>, rendering line-by-line additions (<code>+</code>) and deletions (<code>-</code>).</li>
+                <li><strong>Interactive User Confirmation:</strong> When <code>interactive=True</code> (default), prints the unified diff preview to the console and halts execution with the approval prompt:
+                    <code>Approve file write to '&lt;path&gt;'? [y/N]: </code>.
+                    Inputs matching <code>y</code> or <code>yes</code> allow execution to proceed (<code>status: "approved_and_written"</code>). Any other response raises a <code>PermissionError</code> and aborts the write.</li>
+                <li><strong>Non-Interactive / Headless Fail-Safe:</strong> In non-interactive environments (CI/CD pipelines, headless runners, or EOF/closed STDIN streams), attempts to prompt user input trigger an <code>EOFError</code> or <code>OSError</code>. These exceptions are caught and raised as <code>PermissionError("User rejected write operation... (non-interactive input / EOF)")</code>, preventing headless background processes from making unverified file writes.</li>
+                <li><strong>Dry-Run Simulation Mode:</strong> When <code>dry_run=True</code> is passed, the tool computes and returns the unified diff preview without modifying disk (<code>status: "dry_run_simulated"</code>, <code>bytes_written: 0</code>). This allows agents or automated test suites to simulate file edits risk-free.</li>
+            </ul>
+
+            <h4>4.2.2 Tool Schema & Parameter Reference</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter Name</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                        <th>Governance Function</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>path</code></td>
+                        <td><code>str</code></td>
+                        <td><em>Required</em></td>
+                        <td>Workspace-relative target file path (validated via <code>resolve_path</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><code>content</code></td>
+                        <td><code>str</code></td>
+                        <td><em>Required</em></td>
+                        <td>Full text payload proposed for file writing or replacement.</td>
+                    </tr>
+                    <tr>
+                        <td><code>overwrite</code></td>
+                        <td><code>bool</code></td>
+                        <td><code>True</code></td>
+                        <td>Controls whether existing files can be overwritten. Raises <code>ValueError</code> if <code>False</code> and file exists.</td>
+                    </tr>
+                    <tr>
+                        <td><code>interactive</code></td>
+                        <td><code>bool</code></td>
+                        <td><code>True</code></td>
+                        <td>Enforces interactive human confirmation gate before modifying disk.</td>
+                    </tr>
+                    <tr>
+                        <td><code>dry_run</code></td>
+                        <td><code>bool</code></td>
+                        <td><code>False</code></td>
+                        <td>Simulates file mutation and outputs unified diff without modifying disk.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>4.2.3 Multi-Agent Concurrency & Mutex Synchronization</h4>
+            <p>
+                In multi-agent environments or Orchestrator mode, multiple sub-agents may propose write operations simultaneously. To prevent terminal output collisions, scrambled diff previews, or race conditions during user input prompts, <code>orchestrator/tools.py</code> routes all file writes through a global <code>asyncio.Lock()</code> write mutex (<code>_write_lock</code>). This guarantees that HITL approval prompts are presented sequentially one at a time.
+            </p>
+
+            <h3>4.3 Structured JSON Audit Logging & PII/Secret Redaction</h3>
+            <p>
+                <strong>Location:</strong> <code>log/log.py</code>
+            </p>
+            <p>
+                All logging throughout the harness uses <code>get_logger()</code> / <code>get_audit_logger()</code>, backed by <code>MaskingJsonFormatter</code>:
+            </p>
+            <ul>
+                <li><strong>Structured JSON Output:</strong> Emits formatted JSON objects containing timestamps, log levels, logger names, and message payloads suitable for SIEM ingestion.</li>
+                <li><strong>Regex Redaction:</strong> Automatically redacts sensitive patterns:
+                    <ul>
+                        <li>Bearer tokens &rarr; <code>Bearer [REDACTED_TOKEN]</code></li>
+                        <li>API keys, client secrets, passwords &rarr; <code>[REDACTED_SECRET]</code></li>
+                        <li>Email addresses &rarr; <code>[REDACTED_EMAIL]</code></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>4.4 LLM Exponential Backoff Retry Strategy</h3>
+            <p>
+                <strong>Location:</strong> <code>llm/llm_client.py</code>
+            </p>
+            <p>
+                Protects model completion requests against transient network failures and API rate limit throttling:
+            </p>
+            <ul>
+                <li><strong>Configurable Retries:</strong> Reads <code>RETRY.MAX_RETRIES</code> (default: 3), <code>INITIAL_BACKOFF</code> (0.5s), <code>MAX_BACKOFF</code> (8.0s), and <code>BACKOFF_MULTIPLIER</code> (2x) from configuration.</li>
+                <li><strong>Graceful Degradation:</strong> Catches API exceptions, logs backoff delays, and retries up to the maximum threshold before raising structured exceptions.</li>
+            </ul>
+
+            <h3>4.5 Environment Variable Credentials Override</h3>
+            <p>
+                <strong>Location:</strong> <code>auth/oauth.py</code>
+            </p>
+            <p>
+                Prioritizes environment variables (<code>LLM_OAUTH_CLIENT_ID</code>, <code>OAUTH_CLIENT_ID</code>, <code>LLM_OAUTH_CLIENT_SECRET</code>, <code>OAUTH_CLIENT_SECRET</code>, <code>OAUTH_TOKEN_URL</code>, <code>LLM_OAUTH_SCOPE</code>, <code>OAUTH_SCOPE</code>) over values stored in <code>resources/config.yaml</code>, allowing secure secret injection at runtime.
+            </p>
+
+            <h3>4.6 Context Window Memory Compaction & Token/Cost Calculation</h3>
+            <p>
+                <strong>Location:</strong> <code>memory/compaction.py</code>, <code>memory/token_counter.py</code>, <code>loop/loop.py</code>
+            </p>
+            <p>
+                Prevents context overflow while tracking session resource usage:
+            </p>
+            <ul>
+                <li><strong>Token Counter:</strong> Uses <code>tiktoken</code> (with character/4 fallback) to count prompt and completion tokens.</li>
+                <li><strong>Context Memory Compactor:</strong> Automatically summarizes older assistant and tool messages when conversation token length exceeds <code>THRESHOLD_PCT</code> (default: 70%) of model context window, keeping system prompts and recent turns intact.</li>
+                <li><strong>Monetary Cost Estimator:</strong> Computes cumulative USD cost using configured per-model pricing (e.g. <code>INPUT_COST_PER_1M</code> and <code>OUTPUT_COST_PER_1M</code>) and returns totals in <code>AgentResult</code>.</li>
+            </ul>
+
+            <h3>4.7 Multi-Agent Concurrency & Mutex Write Safety</h3>
+            <p>
+                <strong>Location:</strong> <code>orchestrator/orchestrator.py</code>, <code>orchestrator/tools.py</code>
+            </p>
+            <p>
+                Ensures safe multi-agent workload distribution:
+            </p>
+            <ul>
+                <li><strong>Parallel Read Task Execution:</strong> Concurrently dispatches read operations (<code>read_file</code>, <code>list_dir</code>, <code>file_search</code>) using thread pools and <code>asyncio.Semaphore(10)</code> to throttle execution.</li>
+                <li><strong>Mutex Write Gate:</strong> Enforces serialized file mutations using an <code>asyncio.Lock()</code> write mutex (<code>_write_lock</code>) across sub-agents to prevent race conditions or corrupted overwrites.</li>
+            </ul>
+
+            <h3>4.8 Workspace Path Resolution & Containment</h3>
+            <p>
+                <strong>Location:</strong> <code>tools/_common.py</code>
+            </p>
+            <p>
+                Resolves relative and absolute file paths against <code>HARNESS_WORKSPACE</code> (or the project root) and validates path containment using <code>candidate.relative_to(root)</code> to block standard relative path traversal attempts (e.g., <code>../../etc/passwd</code>).
+            </p>
+        </section>
+
+        <!-- Section 5: Remaining Gaps -->
+        <section id="remaining-gaps">
+            <h2>5. Governance & Security Features Still Needed in BareMinimum</h2>
+
+            <div class="callout callout-warning">
+                <strong>Action Required:</strong> The items below represent outstanding security gaps and governance mechanisms that must be implemented to achieve full enterprise production readiness.
+            </div>
+
+            <!-- Subsection 5.1: Symlink Sandboxing -->
+            <div id="symlink-sandboxing">
+                <h3>5.1 Hardened Workspace Sandboxing & Symlink Defense (<code>tools/_common.py</code>)</h3>
+                <p><span class="badge badge-critical">CRITICAL PRIORITY</span></p>
+
+                <p>
+                    While basic path resolution checks relative containment, further hardening in <code>tools/_common.py</code> is required to neutralize <strong>symlink target dereferencing</strong>, <strong>dangling parent-directory symlinks during file creation</strong>, and <strong>exfiltration of protected workspace dotfiles</strong>.
+                </p>
+
+                <h4>5.1.1 Threat Vectors & Defense Enforcement Table</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Threat Vector</th>
+                            <th>Example Input / Attack Path</th>
+                            <th>Vulnerability without Hardening</th>
+                            <th>Hardened Defense Logic (<code>tools/_common.py</code>)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Direct Path Traversal</strong></td>
+                            <td><code>read_file("../../etc/passwd")</code></td>
+                            <td>Accesses arbitrary system files outside project folder.</td>
+                            <td><code>candidate.resolve()</code> + <code>relative_to(root)</code> raises <code>ValueError</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>In-Workspace Symlink Escape</strong></td>
+                            <td><code>workspace/link.txt -> /etc/shadow</code></td>
+                            <td>Looks like local path; passes string prefix checks.</td>
+                            <td><code>resolve(strict=False)</code> follows symlink target to <code>/etc/shadow</code>, failing <code>relative_to(root)</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Parent Symlink on File Write</strong></td>
+                            <td><code>write_file("out_link/file.py")</code><br>(where <code>out_link -> /usr/bin/</code>)</td>
+                            <td>Target file doesn't exist yet, bypassing standard <code>exists()</code> check and writing to <code>/usr/bin/</code>.</td>
+                            <td><code>candidate.parent.resolve()</code> checks the parent folder symlink and aborts execution.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Internal Secret Exfiltration</strong></td>
+                            <td><code>read_file(".env")</code> or<br><code>read_file("resources/config.yaml")</code></td>
+                            <td>LLM exfiltrates OAuth secrets, API keys, or tokens.</td>
+                            <td>Protected Path Denylist raises <code>PermissionError</code> for blocked filenames/directories.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Git Repository Corruption</strong></td>
+                            <td><code>write_file(".git/HEAD", "corrupted")</code></td>
+                            <td>Modifies internal VCS history or corrupts repository state.</td>
+                            <td>Denylist explicitly blocks <code>.git/</code> directory mutations.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>5.2 Complete Secret Revocation & Repository Sanitization</h3>
+            <p><span class="badge badge-critical">CRITICAL PRIORITY</span></p>
+            <p>
+                Although <code>auth/oauth.py</code> checks environment variables first, default secret strings still reside in <code>resources/config.yaml</code>.
+            </p>
+            <ul>
+                <li><strong>Task:</strong> Revoke and rotate default OAuth client credentials.</li>
+                <li><strong>Task:</strong> Replace credential entries in <code>resources/config.yaml</code> with empty placeholder strings.</li>
+                <li><strong>Task:</strong> Provide a <code>config.yaml.example</code> template and integrate <code>python-dotenv</code> to auto-load local <code>.env</code> files.</li>
+            </ul>
+
+            <h3>5.3 Hard Session Dollar Cost ($) Budget Capping</h3>
+            <p><span class="badge badge-medium">MEDIUM PRIORITY</span></p>
+            <p>
+                The harness tracks turn limits (<code>MAX_TURNS</code>) and calculates total monetary cost ($ USD) per run, but does not enforce a hard dollar cost budget cap.
+            </p>
+            <ul>
+                <li><strong>Task:</strong> Add a configurable maximum dollar threshold per session (e.g. max $2.00 per run) in <code>loop/loop.py</code>.</li>
+                <li><strong>Task:</strong> Automatically halt agent execution and return a <code>STOP_COST_LIMIT</code> result when cumulative cost exceeds the budget.</li>
+            </ul>
+
+            <h3>5.4 Role-Based Access Control (RBAC) & Tool Scoping</h3>
+            <p><span class="badge badge-medium">MEDIUM PRIORITY</span></p>
+            <p>
+                Currently, all registered tools are exposed equally in every agent run.
+            </p>
+            <ul>
+                <li><strong>Task:</strong> Define Execution Profiles in <code>tools/registry.py</code>:
+                    <ul>
+                        <li><code>READ_ONLY</code>: Exposes only read tools (<code>read_file</code>, <code>list_dir</code>, <code>file_search</code>) for automated PR audits or code reviews.</li>
+                        <li><code>DEVELOPER</code>: Exposes read tools + <code>write_file</code> (with mandatory HITL approval).</li>
+                        <li><code>ADMIN</code>: Exposes full toolsuite including system configuration management.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>5.5 Subprocess / Shell Execution Isolation</h3>
+            <p><span class="badge badge-high">HIGH PRIORITY (For Future Shell Tools)</span></p>
+            <p>
+                If terminal execution tools (e.g., <code>run_terminal</code>, <code>bash</code>) are added in future iterations:
+            </p>
+            <ul>
+                <li><strong>Task:</strong> Enforce strict command allowlisting (e.g. <code>pytest</code>, <code>git status</code>, <code>ruff</code>) and denylisting (e.g. <code>rm -rf</code>, <code>sudo</code>, <code>chmod</code>).</li>
+                <li><strong>Task:</strong> Impose execution timeouts (e.g. 30 seconds max per command).</li>
+                <li><strong>Task:</strong> Run subprocess calls inside an unprivileged Docker container or sandbox context.</li>
+            </ul>
+
+            <h3>5.6 Dependency Pinning & Supply Chain Hash Locking</h3>
+            <p><span class="badge badge-medium">MEDIUM PRIORITY</span></p>
+            <p>
+                <code>requirements.txt</code> uses loose version specifications without cryptographic hashes.
+            </p>
+            <ul>
+                <li><strong>Task:</strong> Generate pinned lockfiles with SHA-256 hashes using <code>pip-compile --generate-hashes</code> or <code>uv.lock</code>.</li>
+                <li><strong>Task:</strong> Integrate CI/CD security scanning tools into automated pull request workflows.</li>
+            </ul>
+        </section>
+
+        <!-- Section 6: Verification & Code References -->
+        <section id="code-references">
+            <h2>6. Existing Code Implementations & Unit Tests</h2>
+            <p>Below are code extracts confirming security mechanisms active in the codebase:</p>
+
+            <h3>6.1 Prompt Injection Sanitizer (<code>tools/tool_output_sanitizer.py</code>)</h3>
+            <pre><code>import html
+import re
+
+INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?previous\s+instructions",
+    r"system\s+override",
+    r"you\s+are\s+now\s+an?\s+unrestricted",
+    r"disregard\s+above",
+]
+
+def sanitize_tool_output(content: str, path: str = "") -> str:
+    for pattern in INJECTION_PATTERNS:
+        if re.search(pattern, content, re.IGNORECASE):
+            content = f"[SECURITY WARNING: Possible prompt injection detected in file content]\n" + content
+            break
+
+    safe_content = content.replace("&lt;/untrusted_file_content&gt;", "&amp;lt;/untrusted_file_content&amp;gt;")
+
+    return (
+        f'&lt;untrusted_file_content path="{html.escape(path)}"&gt;\n'
+        f'{safe_content}\n'
+        f'&lt;/untrusted_file_content&gt;'
+    )
+</code></pre>
+
+            <h3>6.2 Structured Audit Formatter (<code>log/log.py</code>)</h3>
+            <pre><code>class MaskingJsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        log_obj = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": mask_sensitive_data(record.getMessage()),
+        }
+        return json.dumps(log_obj)
+</code></pre>
+
+            <h3>6.3 Exponential Backoff Retry Loop (<code>llm/llm_client.py</code>)</h3>
+            <pre><code>for attempt in range(1, max_retries + 1):
+    try:
+        completion = client.chat.completions.create(**kwargs)
+        return completion.choices[0].message
+    except Exception as e:
+        last_exception = e
+        logger.warning("[LLM] Attempt %d failed: %s. Retrying in %.1fs…", attempt, e, backoff)
+        time.sleep(min(backoff, max_backoff))
+        backoff *= backoff_multiplier
+</code></pre>
+
+            <h3>6.4 Mutex Write Serialization (<code>orchestrator/tools.py</code>)</h3>
+            <pre><code>_write_lock = asyncio.Lock()
+
+async def async_write_file(filepath: str, content: str, ...) -> str:
+    async with _write_lock:
+        logger.info("[Orchestrator Write Lock Acquired] Writing file: %s", filepath)
+        result = await asyncio.to_thread(write_file, path=filepath, content=content)
+        return sanitize_tool_output(json.dumps(result), path=filepath)
+</code></pre>
+        </section>
+
+        <!-- Section 7: Phased Roadmap -->
+        <section id="roadmap">
+            <h2>7. Phased Governance & Security Roadmap</h2>
+
+            <div class="callout callout-success">
+                <strong>Completed Guardrails (Active in Codebase)</strong>
+                <ul>
+                    <li><input type="checkbox" checked disabled> Indirect Prompt Injection detection & <code>&lt;untrusted_file_content&gt;</code> XML encapsulation.</li>
+                    <li><input type="checkbox" checked disabled> Human-in-the-Loop (HITL) write approval gate with unified diff previews & <code>dry_run</code> mode.</li>
+                    <li><input type="checkbox" checked disabled> Structured JSON audit logging with automated credential & PII redaction.</li>
+                    <li><input type="checkbox" checked disabled> Exponential backoff retry strategy for transient LLM API errors.</li>
+                    <li><input type="checkbox" checked disabled> Environment variable overrides for OAuth credentials in <code>auth/oauth.py</code>.</li>
+                    <li><input type="checkbox" checked disabled> Conversation context window memory compaction & token/cost tracking.</li>
+                    <li><input type="checkbox" checked disabled> Multi-agent concurrency safety: parallel read dispatch & mutex-locked write operations.</li>
+                    <li><input type="checkbox" checked disabled> Workspace path containment validation in <code>tools/_common.py</code>.</li>
+                </ul>
+            </div>
+
+            <div class="callout callout-warning">
+                <strong>Next Priority Improvements (Remaining Work)</strong>
+                <ul>
+                    <li><input type="checkbox"> Hardened symlink resolution and protected path denylisting (<code>.git</code>, <code>.env</code>, <code>.venv</code>).</li>
+                    <li><input type="checkbox"> Sanitize default credentials in <code>resources/config.yaml</code> and add <code>.env</code> template support.</li>
+                    <li><input type="checkbox"> Enforce hard session dollar cost ($) budget limits in agent loop.</li>
+                    <li><input type="checkbox"> Role-Based Access Control (RBAC) tool execution profiles (<code>READ_ONLY</code>, <code>DEVELOPER</code>,  activated tools).</li>
+                    <li><input type="checkbox"> Subprocess isolation and command allowlisting for future shell execution tools.</li>
+                    <li><input type="checkbox"> Cryptographic hash-pinned dependency lockfile generation and CI SAST integration.</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; BareMinimum Harness Governance & Security Architecture Documentation.</p>
+        </footer>
+    </main>
+
+</body>
+</html>

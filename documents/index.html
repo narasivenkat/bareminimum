@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BareMinimum Harness — Technical Documentation Hub</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 3rem 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2rem;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-blue);
+        }
+        .card h2 {
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+            margin-bottom: 0.75rem;
+        }
+        .card.sec h2 {
+            color: var(--accent-green);
+        }
+        .card p {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+        }
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>BareMinimum Harness Architecture Hub</h1>
+        <p>Comprehensive design documents, sub-agent orchestrator guides, and security frameworks.</p>
+    </header>
+
+    <div class="grid">
+        <a href="orchestrator_subagents_guide.html" class="card">
+            <div>
+                <h2>1. Orchestrator & Sub-Agents Architecture Guide</h2>
+                <p>Detailed guide on multi-agent workload distribution: parallel read task execution across AutoGen Explorer sub-agents, combined with serialized write queue execution under mutex lock.</p>
+            </div>
+            <div>
+                <span class="badge">AutoGen • Parallel Reads • Serial Writes</span>
+            </div>
+        </a>
+
+        <a href="governance_security_guide.html" class="card sec">
+            <div>
+                <h2>2. Governance & Security Architecture Guide</h2>
+                <p>Comprehensive guide detailing existing governance & security features (Prompt Injection Sanitizer, HITL Write Approvals, JSON Audit Logger, Rate Limit Circuit Breaker) and remaining enterprise enhancements.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-green); border-color: var(--accent-green);">Prompt Injection • HITL • Audit Logs • Circuit Breaker</span>
+            </div>
+        </a>
+    </div>
+
+    <footer>
+        <p>&copy; BareMinimum Harness Documentation Portal</p>
+    </footer>
+</body>
+</html>

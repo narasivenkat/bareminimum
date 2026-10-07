@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestrator & Sub-Agents Architecture Guide</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #0f172a;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #334155;
+            --heading-color: #0f172a;
+            --border-color: #e2e8f0;
+            --code-bg: #1e293b;
+            --code-text: #f8fafc;
+            --read-tag-bg: #dbeafe;
+            --read-tag-text: #1e40af;
+            --write-tag-bg: #fee2e2;
+            --write-tag-text: #991b1b;
+            --warning-bg: #fffbeb;
+            --warning-border: #f59e0b;
+            --warning-text: #92400e;
+            --success-bg: #f0fdf4;
+            --success-border: #22c55e;
+            --success-text: #166534;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background-color: #0f172a;
+            color: #94a3b8;
+            padding: 2rem 1rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: #f8fafc;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.8rem;
+        }
+
+        .sidebar a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: block;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #1e293b;
+            color: #38bdf8;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 3rem 4rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            color: var(--heading-color);
+            margin-bottom: 0.5rem;
+        }
+
+        header p.subtitle {
+            font-size: 1.15rem;
+            color: #64748b;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-read {
+            background-color: var(--read-tag-bg);
+            color: var(--read-tag-text);
+        }
+
+        .badge-write {
+            background-color: var(--write-tag-bg);
+            color: var(--write-tag-text);
+        }
+
+        section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            color: var(--heading-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--heading-color);
+            margin: 1.5rem 0 0.8rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Callout boxes */
+        .callout {
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+        }
+
+        .callout-warning {
+            background-color: var(--warning-bg);
+            border-color: var(--warning-border);
+            color: var(--warning-text);
+        }
+
+        .callout-success {
+            background-color: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        /* Diagrams */
+        .diagram-container {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .svg-diagram {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "Fira Code", "Consolas", "Courier New", monospace;
+            font-size: 0.9rem;
+            margin: 1.2rem 0;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: "Fira Code", "Consolas", "Courier New", monospace;
+            background-color: #e2e8f0;
+            color: #0f172a;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Comparison Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--heading-color);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar">
+        <h2>Orchestrator Guide</h2>
+        <ul>
+            <li><a href="#overview">1. Overview</a></li>
+            <li><a href="#architecture">2. Architecture Pattern</a></li>
+            <li><a href="#parallel-reads">3. Parallelizing Read Tasks</a></li>
+            <li><a href="#who-decides">3.1 Who Decides to Parallelize?</a></li>
+            <li><a href="#sequential-writes">4. Serializing Write Tasks</a></li>
+            <li><a href="#hitl-integration">4.1 Human-in-the-Loop (HITL) Gate Integration</a></li>
+            <li><a href="#workflow">5. Execution Workflow</a></li>
+            <li><a href="#code-implementation">6. Code Implementation</a></li>
+            <li><a href="#autogen-implementation">7. Implementation using AutoGen</a></li>
+            <li><a href="#best-practices">8. Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header>
+            <h1>Orchestrator & Sub-Agent Architecture</h1>
+            <p class="subtitle">A guide to concurrent read task parallelization and serialized write execution in Agentic Systems.</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <section id="overview">
+            <h2>1. Overview</h2>
+            <p>
+                When building scalable agentic coding tools, workload distribution across multiple LLM instances (sub-agents) significantly reduces latency and increases task completion speed.
+                However, applying concurrency blindly across all operations introduces severe concurrency bugs, data corruption, and race conditions.
+            </p>
+            <p>
+                To achieve high performance while maintaining system consistency, we use an <strong>Orchestrator-Sub-Agent pattern</strong> with strict operational boundaries:
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Operation Type</th>
+                        <th>Tools Included</th>
+                        <th>Execution Mode</th>
+                        <th>Concurrency Rationale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-read">Read Operations</span></td>
+                        <td><code>list_dir</code>, <code>read_file</code>, <code>file_search</code></td>
+                        <td><strong>Parallel</strong> (Sub-Agents)</td>
+                        <td>Stateless, non-mutating, idempotent operations safely scale across concurrent threads/workers.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-write">Write Operations</span></td>
+                        <td><code>write_file</code> (and directory mutations)</td>
+                        <td><strong>Sequential</strong> (Orchestrator Queue)</td>
+                        <td>Mutating state requires strict synchronization to avoid race conditions, overwrites, and partial state corruption.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 2: Architecture Pattern -->
+        <section id="architecture">
+            <h2>2. Architecture Pattern</h2>
+            <p>
+                The <strong>Orchestrator Agent</strong> operates as the central control node. It parses high-level user goals, divides read-heavy exploration tasks among specialized <strong>Sub-Agents (Workers)</strong>, collects sub-agent insights, and executes write mutations sequentially.
+            </p>
+
+            <div class="diagram-container">
+                <svg class="svg-diagram" width="750" height="380" viewBox="0 0 750 380" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Orchestrator Box -->
+                    <rect x="250" y="20" width="250" height="60" rx="8" fill="#2563eb" />
+                    <text x="375" y="55" fill="#ffffff" font-size="16" font-weight="bold" text-anchor="middle">Orchestrator Agent</text>
+
+                    <!-- Split Lines to Sub-Agents -->
+                    <path d="M 290 80 L 120 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                    <path d="M 375 80 L 375 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                    <path d="M 460 80 L 630 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Sub Agent 1 -->
+                    <rect x="40" y="150" width="160" height="70" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+                    <text x="120" y="178" fill="#1e40af" font-size="14" font-weight="bold" text-anchor="middle">Sub-Agent 1</text>
+                    <text x="120" y="200" fill="#3b82f6" font-size="12" text-anchor="middle">list_dir / file_search</text>
+
+                    <!-- Sub Agent 2 -->
+                    <rect x="295" y="150" width="160" height="70" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+                    <text x="375" y="178" fill="#1e40af" font-size="14" font-weight="bold" text-anchor="middle">Sub-Agent 2</text>
+                    <text x="375" y="200" fill="#3b82f6" font-size="12" text-anchor="middle">read_file (Module A)</text>
+
+                    <!-- Sub Agent 3 -->
+                    <rect x="550" y="150" width="160" height="70" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+                    <text x="630" y="178" fill="#1e40af" font-size="14" font-weight="bold" text-anchor="middle">Sub-Agent 3</text>
+                    <text x="630" y="200" fill="#3b82f6" font-size="12" text-anchor="middle">read_file (Module B)</text>
+
+                    <!-- Return Lines to Orchestrator Synthesis -->
+                    <path d="M 120 220 L 290 280" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                    <path d="M 375 220 L 375 280" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                    <path d="M 630 220 L 460 280" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+
+                    <!-- Synthesis & Write Queue -->
+                    <rect x="220" y="280" width="310" height="70" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2" />
+                    <text x="375" y="308" fill="#991b1b" font-size="14" font-weight="bold" text-anchor="middle">Sequential Write Executor</text>
+                    <text x="375" y="330" fill="#dc2626" font-size="12" text-anchor="middle">write_file Task Queue (Serial / Mutex Locked)</text>
+
+                    <!-- Arrow Definitions -->
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Section 3: Parallelizing Read Tasks -->
+        <section id="parallel-reads">
+            <h2>3. Parallelizing Read Tasks</h2>
+            <p>
+                Read operations are state-agnostic and read-only. Consequently, spawning sub-agents to inspect multiple directories or files simultaneously yields massive performance improvements.
+            </p>
+
+            <h3>Key Read Tools Safe for Concurrency:</h3>
+            <ul>
+                <li><strong><code>list_dir</code></strong>: Allows sub-agents to scan multiple subdirectories in parallel to build repository structures.</li>
+                <li><strong><code>file_search</code></strong>: Enables concurrent pattern matching across distinct sub-trees.</li>
+                <li><strong><code>read_file</code></strong>: Enables multiple sub-agents to inspect individual source files concurrently without blocking each other.</li>
+            </ul>
+
+            <div class="callout callout-success">
+                <strong>Performance Gain:</strong> In a multi-file codebase search, running 5 sub-agents concurrently to inspect relevant modules reduces exploration wall-clock time by 70–80% compared to sequential tool calls.
+            </div>
+
+            <!-- Subsection 3.1: Who Decides to Parallelize -->
+            <div id="who-decides">
+                <h3>3.1 Who Decides to Parallelize: the LLM or the Orchestrator Code?</h3>
+                <p>
+                    A common point of confusion is <em>where</em> the parallelization decision actually lives. The answer is that responsibility is
+                    <strong>split across two layers</strong>: the <strong>LLM reasons about <em>what</em> can run in parallel</strong>, while the
+                    <strong>orchestrator code enforces <em>how</em> it runs safely</strong>. Neither layer owns the decision alone.
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Decision</th>
+                            <th>Owner</th>
+                            <th>What It Determines</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Which reads are independent</strong></td>
+                            <td><span class="badge badge-read">LLM</span></td>
+                            <td>The model understands task intent and emits multiple independent read tool calls in a single turn (e.g., “read <code>config.py</code> AND <code>main.py</code> AND search for <code>db_connect</code>”).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Whether to execute them concurrently</strong></td>
+                            <td><span class="badge badge-write">Orchestrator Code</span></td>
+                            <td>The harness detects that the batched calls are all read-only and dispatches them together via <code>asyncio.gather</code> — deterministically, without asking the model.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Concurrency limits &amp; safety</strong></td>
+                            <td><span class="badge badge-write">Orchestrator Code</span></td>
+                            <td>The code caps fan-out with a <code>Semaphore</code>, isolates per-task errors, and forces writes through a serial queue regardless of what the LLM requests.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Two Models of Control</h3>
+                <p>There are two practical ways to wire this up, and most production harnesses use the hybrid of both:</p>
+                <ul>
+                    <li>
+                        <strong>LLM-driven (dynamic) parallelism:</strong> The model explicitly decides the degree of parallelism by choosing how many independent read
+                        tool calls to emit per turn. This is flexible and adapts to the task, but it is non-deterministic and spends reasoning tokens to make the call.
+                    </li>
+                    <li>
+                        <strong>Code-driven (deterministic) parallelism:</strong> The orchestrator code inspects the batch of tool calls the model returned, classifies each as
+                        read vs. write, and <em>automatically</em> runs all reads concurrently while serializing writes. The model does not need to “know” about threads or locks —
+                        it just requests data, and the harness decides the safe execution strategy.
+                    </li>
+                </ul>
+
+                <div class="callout callout-success">
+                    <strong>Recommended pattern (hybrid):</strong> Let the <strong>LLM decide <em>what</em> to read in parallel</strong> by surfacing independent read
+                    requests in one turn, and let the <strong>orchestrator code decide <em>how</em></strong> to run them — fanning out read-only calls with
+                    <code>asyncio.gather</code> while unconditionally routing every <code>write_file</code> through the serialized mutex queue. This keeps the
+                    intelligence in the model and the safety guarantees in deterministic code.
+                </div>
+
+                <div class="callout callout-warning">
+                    <strong>Anti-pattern:</strong> Do <em>not</em> let the LLM decide whether writes may run in parallel. Write serialization must always be enforced by the
+                    orchestrator code, because the model has no reliable visibility into file locks, dependency ordering, or peer sub-agent mutations.
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Serializing Write Tasks -->
+        <section id="sequential-writes">
+            <h2>4. Serializing Write Tasks (Why Writes Must NOT Be Parallelized)</h2>
+            <p>
+                While parallel reads accelerate codebase analysis, write tasks must remain strictly sequential. Writing files asynchronously across multiple sub-agents introduces severe flaws:
+            </p>
+
+            <div class="callout callout-warning">
+                <strong>Critical Hazards of Parallel Writes:</strong>
+                <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                    <li><strong>Race Conditions & Lost Updates:</strong> If two sub-agents write to the same file or overlapping files simultaneously, one worker's output will overwrite the other's without notice.</li>
+                    <li><strong>Inconsistent Code State:</strong> File updates often depend on specific ordered prerequisites (e.g. creating a utility function before referencing it in another file). Out-of-order execution breaks build syntax.</li>
+                    <li><strong>Token & Context Drift:</strong> Sub-agents modifying files in parallel lack visibility into modifications made by peer sub-agents, leading to conflicting code changes.</li>
+                    <li><strong>File System Locks:</strong> Concurrent disk writes can produce IO errors or locked handle exceptions on Windows and POSIX filesystems.</li>
+                </ul>
+            </div>
+
+            <!-- Subsection 4.1: HITL Integration -->
+            <div id="hitl-integration">
+                <h3>4.1 Human-in-the-Loop (HITL) Gate Integration in Serialized Writes</h3>
+                <p>
+                    In addition to preventing race conditions and file corruption, serializing write tasks via an <code>asyncio.Lock()</code> write mutex (<code>_write_lock</code>) is essential for clean <strong>Human-in-the-Loop (HITL) approval interaction</strong>.
+                </p>
+                <p>
+                    When a write tool operation (<code>write_file</code> / <code>create_file</code>) is executed by the Orchestrator or a sub-agent:
+                </p>
+                <ul>
+                    <li><strong>Unified Diff Previews:</strong> A line-by-line diff preview (<code>difflib.unified_diff</code>) comparing existing disk content to proposed edits is rendered to stdout for user inspection.</li>
+                    <li><strong>Interactive Approval Gate:</strong> Execution pauses at <code>Approve file write to '&lt;path&gt;'? [y/N]: </code> awaiting explicit user confirmation (`y`/`yes`).</li>
+                    <li><strong>Prompt Serialization:</strong> The write mutex ensures that only one sub-agent requests HITL approval at a time. Without serialization, concurrent sub-agents would attempt to read STDIN and output diff previews simultaneously, causing scrambled terminal output and input race conditions.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Section 5: Execution Workflow -->
+        <section id="workflow">
+            <h2>5. Orchestrated Execution Workflow</h2>
+
+            <ol>
+                <li>
+                    <strong>Phase 1: Task Decomposition (Orchestrator)</strong><br>
+                    The main agent receives a complex prompt (e.g. <em>"Refactor error handling across all API routes"</em>) and breaks it into independent exploration targets.
+                </li>
+                <li>
+                    <strong>Phase 2: Parallel Read Dispatch (Sub-Agents)</strong><br>
+                    The Orchestrator invokes sub-agents in parallel using async task gatherers.
+                    Sub-Agent A calls <code>file_search</code>, Sub-Agent B calls <code>list_dir</code>, and Sub-Agent C calls <code>read_file</code>.
+                </li>
+                <li>
+                    <strong>Phase 3: Insights Aggregation (Orchestrator)</strong><br>
+                    Sub-agents report findings back to the Orchestrator. The Orchestrator constructs a coherent, centralized patch plan.
+                </li>
+                <li>
+                    <strong>Phase 4: Serialized Write Queue (Orchestrator)</strong><br>
+                    The Orchestrator processes file modifications sequentially using <code>write_file</code>, verifying dependencies step-by-step.
+                </li>
+            </ol>
+        </section>
+
+        <!-- Section 6: Code Implementation -->
+        <section id="code-implementation">
+            <h2>6. Code Implementation Example</h2>
+            <p>Below is a production-ready Python pattern demonstrating asynchronous parallel sub-agent reads coupled with a synchronized write queue.</p>
+
+            <pre><code>import asyncio
+import logging
+from typing import List, Dict, Any
+
+# Mock Agent Tool Definitions
+async def async_read_file(path: str) -> str:
+    """Read file concurrently (Safe for Parallelization)."""
+    logging.info(f"[READ START] Reading file: {path}")
+    await asyncio.sleep(0.5)  # Simulate I/O latency
+    return f"Contents of {path}"
+
+async def async_list_dir(path: str) -> List[str]:
+    """List directory contents concurrently."""
+    logging.info(f"[READ START] Listing dir: {path}")
+    await asyncio.sleep(0.3)
+    return ["file1.py", "file2.py", "utils.py"]
+
+async def async_file_search(pattern: str) -> List[str]:
+    """Search workspace files concurrently."""
+    logging.info(f"[READ START] Searching pattern: {pattern}")
+    await asyncio.sleep(0.4)
+    return ["auth/login.py", "auth/token.py"]
+
+# Write Queue Lock for Strict Serialization
+write_lock = asyncio.Lock()
+
+async def synchronized_write_file(path: str, content: str) -> bool:
+    """Write file strictly sequentially using asyncio Lock."""
+    async with write_lock:
+        logging.info(f"[WRITE START] Writing to {path} (Lock Acquired)")
+        await asyncio.sleep(0.6)  # Simulate write latency
+        logging.info(f"[WRITE SUCCESS] Finished writing {path}")
+        return True
+
+# Sub-Agent Handler for Read Operations
+async def sub_agent_read_task(task_type: str, target: str) -> Dict[str, Any]:
+    """Sub-agent worker executing read operations concurrently."""
+    if task_type == "read_file":
+        res = await async_read_file(target)
+    elif task_type == "list_dir":
+        res = await async_list_dir(target)
+    elif task_type == "file_search":
+        res = await async_file_search(target)
+    else:
+        raise ValueError(f"Unknown read task type: {task_type}")
+    
+    return {"task_type": task_type, "target": target, "result": res}
+
+# Orchestrator Workflow
+async def run_orchestrator():
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    print("=== Phase 1: Dispatching Sub-Agents for Parallel Reads ===")
+    
+    # Define parallel read targets
+    read_tasks = [
+        sub_agent_read_task("list_dir", "src/"),
+        sub_agent_read_task("file_search", "*.py"),
+        sub_agent_read_task("read_file", "src/config.py"),
+        sub_agent_read_task("read_file", "src/main.py"),
+    ]
+    
+    # Execute all read tasks concurrently via asyncio.gather
+    read_results = await asyncio.gather(*read_tasks)
+    print(f"\nCollected {len(read_results)} read results successfully.\n")
+
+    print("=== Phase 2: Processing Writes Sequentially ===")
+    
+    # Planned writes derived from analysis
+    planned_writes = [
+        ("src/config.py", "# Updated Config\nDEBUG = True\n"),
+        ("src/main.py", "# Updated Main\nimport config\n"),
+    ]
+
+    # Writes must NOT be run in asyncio.gather! Run sequentially instead:
+    for path, content in planned_writes:
+        await synchronized_write_file(path, content)
+
+if __name__ == "__main__":
+    asyncio.run(run_orchestrator())
+</code></pre>
+        </section>
+
+        <!-- Section 7: Implementation using AutoGen -->
+        <section id="autogen-implementation">
+            <h2>7. Implementation using AutoGen</h2>
+            <p>
+                Microsoft AutoGen is a multi-agent framework that simplifies orchestrating multi-agent conversations and tool execution. You can implement the Orchestrator & Sub-Agent pattern in AutoGen by configuring <strong>AssistantAgents</strong> for parallel exploration and restricting write capabilities to a synchronized execution queue.
+            </p>
+
+            <h3>AutoGen Component Mapping</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Architecture Role</th>
+                        <th>AutoGen Primitive</th>
+                        <th>Configuration & Tool Assignment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Orchestrator Agent</strong></td>
+                        <td><code>UserProxyAgent</code> or <code>GroupChatManager</code></td>
+                        <td>Coordinates overall workflow, delegates tasks, synthesizes sub-agent insights, and triggers write steps.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Read Sub-Agents</strong></td>
+                        <td>Specialized <code>AssistantAgent</code> instances</td>
+                        <td>Registered with read-only tools (<code>read_file</code>, <code>list_dir</code>, <code>file_search</code>). Invoked asynchronously via <code>a_initiate_chat</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sequential Write Executor</strong></td>
+                        <td><code>UserProxyAgent</code> / Dedicated Writer Agent</td>
+                        <td>Registered with <code>write_file</code> tool guarded by an <code>asyncio.Lock</code> to enforce strict serial execution.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Parallel Reads & Serialized Writes in AutoGen</h3>
+            <p>
+                In AutoGen, parallel sub-agent execution is achieved using the asynchronous API (<code>a_initiate_chat</code>) combined with <code>asyncio.gather()</code>. This allows multiple explorer sub-agents to scan directories and read target source files concurrently without blocking one another.
+            </p>
+            <p>
+                To prevent concurrent write conflicts, the <code>write_file</code> tool registered with AutoGen is wrapped with an <code>asyncio.Lock()</code>. Even if multiple tasks attempt to invoke file writes, the mutex lock guarantees that file modifications execute one at a time in sequence.
+            </p>
+
+            <h3>AutoGen Code Implementation Example</h3>
+            <p>Below is a production-ready Python snippet showing how to build an Orchestrator and Sub-Agent system using AutoGen:</p>
+
+            <pre><code>import asyncio
+import autogen
+from typing import Annotated
+
+# Configure LLM settings for AutoGen agents
+llm_config = {
+    "config_list": [{"model": "gpt-4o", "api_key": "YOUR_API_KEY"}],
+    "temperature": 0.2,
+}
+
+# ==========================================
+# 1. Asynchronous Read Tools (Parallel-Safe)
+# ==========================================
+async def async_read_file(filepath: Annotated[str, "Path of file to read"]) -> str:
+    """Read file content asynchronously (safe for parallel execution)."""
+    print(f"[Sub-Agent Read] Reading: {filepath}")
+    await asyncio.sleep(0.3)  # Simulate I/O latency
+    return f"Contents of {filepath}"
+
+async def async_list_dir(path: Annotated[str, "Directory path"]) -> str:
+    """List directory contents asynchronously."""
+    print(f"[Sub-Agent Read] Listing directory: {path}")
+    await asyncio.sleep(0.2)
+    return "main.py, config.py, utils.py"
+
+async def async_file_search(pattern: Annotated[str, "Search pattern"]) -> str:
+    """Search files asynchronously."""
+    print(f"[Sub-Agent Read] Searching pattern: {pattern}")
+    await asyncio.sleep(0.3)
+    return "main.py: line 12, utils.py: line 45"
+
+# ==========================================
+# 2. Synchronized Write Tool (Mutex Locked)
+# ==========================================
+write_lock = asyncio.Lock()
+
+async def async_write_file(
+    filepath: Annotated[str, "Path of file to write"],
+    content: Annotated[str, "Content to write into file"]
+) -> str:
+    """Write content to file sequentially using asyncio Lock."""
+    async with write_lock:
+        print(f"[Orchestrator Write] Lock acquired. Writing to {filepath}...")
+        await asyncio.sleep(0.5)  # Simulate disk write latency
+        print(f"[Orchestrator Write] Successfully completed write: {filepath}")
+        return f"Successfully wrote to {filepath}"
+
+# ==========================================
+# 3. AutoGen Agent Definitions
+# ==========================================
+# Orchestrator agent coordinates tasks and executes tools
+orchestrator = autogen.UserProxyAgent(
+    name="Orchestrator",
+    human_input_mode="NEVER",
+    max_consecutive_auto_reply=5,
+    is_termination_msg=lambda x: "TERMINATE" in x.get("content", ""),
+    code_execution_config=False,
+)
+
+# Explorer sub-agent specialized for read operations
+explorer_agent = autogen.AssistantAgent(
+    name="ExplorerSubAgent",
+    system_message="You are a code exploration sub-agent. Inspect and analyze files using read tools.",
+    llm_config=llm_config,
+)
+
+# Writer agent specialized for code updates
+writer_agent = autogen.AssistantAgent(
+    name="WriterAgent",
+    system_message="You are a code modification sub-agent. Update target files safely.",
+    llm_config=llm_config,
+)
+
+# ==========================================
+# 4. Tool Registration in AutoGen
+# ==========================================
+# Register read tools to Explorer Sub-Agent
+autogen.agentchat.register_function(
+    async_read_file,
+    caller=explorer_agent,
+    executor=orchestrator,
+    description="Read contents of a specific file"
+)
+autogen.agentchat.register_function(
+    async_list_dir,
+    caller=explorer_agent,
+    executor=orchestrator,
+    description="List files in a directory"
+)
+autogen.agentchat.register_function(
+    async_file_search,
+    caller=explorer_agent,
+    executor=orchestrator,
+    description="Search codebase for pattern"
+)
+
+# Register write tool to Writer Agent
+autogen.agentchat.register_function(
+    async_write_file,
+    caller=writer_agent,
+    executor=orchestrator,
+    description="Safely write or modify a file"
+)
+
+# ==========================================
+# 5. Orchestrated Execution Workflow
+# ==========================================
+async def main():
+    print("=== Phase 1: Parallel Read Operations with AutoGen Sub-Agents ===")
+    
+    # Launch parallel read tasks using AutoGen's async initiation (a_initiate_chat)
+    read_task_1 = orchestrator.a_initiate_chat(
+        explorer_agent,
+        message="Please list contents of directory '.' and read 'config.py'.",
+        clear_history=True
+    )
+    read_task_2 = orchestrator.a_initiate_chat(
+        explorer_agent,
+        message="Please search for 'db_connect' pattern in codebase.",
+        clear_history=True
+    )
+
+    # Gather results concurrently
+    await asyncio.gather(read_task_1, read_task_2)
+    print("\nParallel exploration complete.\n")
+
+    print("=== Phase 2: Serialized Write Operations ===")
+    
+    # Execute write task sequentially
+    await orchestrator.a_initiate_chat(
+        writer_agent,
+        message="Update 'config.py' with new configuration settings.",
+        clear_history=True
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
+</code></pre>
+
+            <div class="callout callout-success">
+                <strong>Key Takeaway for AutoGen:</strong> Using <code>a_initiate_chat</code> combined with <code>asyncio.gather</code> allows multiple AutoGen sub-agents to execute read-heavy exploration tasks concurrently, while protecting write tools with an <code>asyncio.Lock</code> ensures that file mutations remain strictly sequential and safe.
+            </div>
+        </section>
+
+        <!-- Section 8: Best Practices -->
+        <section id="best-practices">
+            <h2>8. Best Practices & Guidelines</h2>
+
+            <ul>
+                <li>
+                    <strong>Limit Read Concurrency:</strong> Bound the maximum number of concurrent sub-agents using an <code>asyncio.Semaphore(10)</code> to prevent hitting LLM rate limits or exhausting system file descriptors.
+                </li>
+                <li>
+                    <strong>Single Responsibility Writes:</strong> Always delegate <code>write_file</code> tool calls directly to the Orchestrator or run them through a synchronized queue worker.
+                </li>
+                <li>
+                    <strong>Pre-Condition Validation:</strong> Before executing a sequential write, verify that the target file hasn't changed since the initial read step (e.g., hash or timestamp checks).
+                </li>
+                <li>
+                    <strong>Error Isolation:</strong> If a parallel sub-agent fails during a read task, log the failure and allow remaining sub-agents to complete without aborting the whole run.
+                </li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>&copy; Agentic Coding Harness Architecture Documentation. All rights reserved.</p>
+        </footer>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Cross-platform dispatcher for setup
+# Runs setup.bat on Windows, and setup.sh on macOS / Linux.
+# ---------------------------------------------------------------------------
+
+SOURCE="${BASH_SOURCE[0]:-$0}"
+while [ -h "$SOURCE" ]; do
+    DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+OS_NAME="$(uname -s 2>/dev/null || echo unknown)"
+
+case "$OS_NAME" in
+    CYGWIN*|MINGW*|MSYS*|*Windows_NT*)
+        IS_WIN=1
+        ;;
+    *)
+        if [ "${OS:-}" = "Windows_NT" ]; then
+            IS_WIN=1
+        else
+            IS_WIN=0
+        fi
+        ;;
+esac
+
+if [ "$IS_WIN" -eq 1 ]; then
+    exec "$SCRIPT_DIR/setup.bat" "$@"
+else
+    exec "$SCRIPT_DIR/setup.sh" "$@"
+fi

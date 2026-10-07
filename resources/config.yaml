@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------------------
+# Application configuration (YAML)
+# Converted from resources/config.properties.
+# Structure: top-level keys are "sections", nested keys are "options",
+# mirroring the (section, option) lookup used by ConfigManager.
+# ---------------------------------------------------------------------------
+
+Proxy:
+  USE_PROXY: true
+
+AGENT:
+  # Hard upper limit on the number of model turns in a single agent run.
+  MAX_TURNS: 100
+
+MEMORY:
+  # Conversation compaction (memory/compaction.py).
+  # When the running conversation exceeds THRESHOLD_PCT of CONTEXT_WINDOW
+  # tokens, older assistant/tool messages are summarised into a single note.
+  # The system prompt, user messages, and tool schemas are never compacted.
+  ENABLED: true
+  # Total context window (tokens) of the target model.
+  CONTEXT_WINDOW: 128000
+  # Trigger compaction once usage exceeds this percentage of the window.
+  THRESHOLD_PCT: 70
+  # Number of most-recent messages always kept verbatim (never summarised).
+  KEEP_RECENT: 6
+  # tiktoken encoding used for counting (cl100k_base ~ GPT-4/4o family).
+  # Falls back to a char/4 heuristic if tiktoken can't load this encoding.
+  TOKEN_ENCODING: cl100k_base
+
+LLM:
+  # --- Generic settings (shared by every model) ---
+  API_URL: https://api.pivpn.core.ford.com/fordllmapi/api/v1/chat/completions
+  BASE_API_URL: https://api.pivpn.core.ford.com/fordllmapi/api/v1
+  STREAM: false
+  STREAM_TIMEOUT: 60.0
+  RETRY.MAX_RETRIES: 3
+  RETRY.INITIAL_BACKOFF: 0.5
+  RETRY.MAX_BACKOFF: 8.0
+  RETRY.BACKOFF_MULTIPLIER: 2
+  INPUT_COST_PER_1M: 0.15
+  OUTPUT_COST_PER_1M: 0.60
+
+  # --- Per-model generation parameters ---
+  # One entry per selectable model. NAME is the model id sent to the API and
+  # shown in the selection menu. Mark exactly one entry with DEFAULT: true to
+  # make it the default when the user does not pick one at the prompt.
+  MODELS:
+    - NAME: gemini-3.6-flash
+      DEFAULT: true
+      TEMPERATURE: 0.5
+      MAX_TOKENS: 65536
+      CONTEXT_WINDOW: 1048576
+      TOP_P: 0.2
+      INPUT_COST_PER_1M: 0.15
+      OUTPUT_COST_PER_1M: 0.60
+    - NAME: claude-opus-4.8
+      DEFAULT: false
+      TEMPERATURE: 0.5
+      MAX_TOKENS: 64000
+      CONTEXT_WINDOW: 200000
+      TOP_P: 0.2
+      INPUT_COST_PER_1M: 15.00
+      OUTPUT_COST_PER_1M: 75.00
+    - NAME: deepseekv41-flash
+      DEFAULT: false
+      TEMPERATURE: 0.5
+      MAX_TOKENS: 8192
+      CONTEXT_WINDOW: 128000
+      TOP_P: 0.2
+      INPUT_COST_PER_1M: 0.14
+      OUTPUT_COST_PER_1M: 0.28
+    - NAME: glm-5-3-flash
+      DEFAULT: false
+      TEMPERATURE: 0.5
+      MAX_TOKENS: 8192
+      CONTEXT_WINDOW: 128000
+      TOP_P: 0.2
+      INPUT_COST_PER_1M: 0.10
+      OUTPUT_COST_PER_1M: 0.20
+
+TOOLS: {}
