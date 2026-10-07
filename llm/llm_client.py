@@ -3,13 +3,15 @@ LLM client adapter for the exception claims validation pipeline.
 
 Authenticates via OAuth bearer token (auth/oauth.py) and calls the
 LLM API endpoint using the OpenAI-compatible client. Configuration
-is read from resources/config.yaml via config/config.py.
+is read from environment variables (LLM_API_URL, LLM_BASE_API_URL) or
+resources/config.yaml via config/config.py.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from typing import Any, Optional
 
@@ -22,11 +24,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_client_params() -> dict[str, Any]:
-    """Read generic, model-independent client settings from config.yaml."""
+    """Read generic, model-independent client settings from environment variables or config.yaml."""
     cfg = ConfigManager
     return {
-        "base_url": cfg.get("LLM", "BASE_API_URL"),
-        "api_url": cfg.get("LLM", "API_URL"),
+        "base_url": os.getenv("LLM_BASE_API_URL") or os.getenv("BASE_API_URL") or cfg.get("LLM", "BASE_API_URL"),
+        "api_url": os.getenv("LLM_API_URL") or os.getenv("API_URL") or cfg.get("LLM", "API_URL"),
         "max_retries": int(cfg.get("LLM", "RETRY.MAX_RETRIES", "3") or "3"),
         "initial_backoff": float(cfg.get("LLM", "RETRY.INITIAL_BACKOFF", "0.5") or "0.5"),
         "max_backoff": float(cfg.get("LLM", "RETRY.MAX_BACKOFF", "8.0") or "8.0"),

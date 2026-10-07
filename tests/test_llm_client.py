@@ -4,10 +4,20 @@ from unittest.mock import MagicMock, patch
 
 from llm.llm_client import (
     LLMClient,
+    _get_client_params,
     _get_model_params,
     available_models,
     default_model,
 )
+
+
+def test_get_client_params_from_env_vars(monkeypatch):
+    monkeypatch.setenv("LLM_API_URL", "https://env.api.example.com/chat")
+    monkeypatch.setenv("LLM_BASE_API_URL", "https://env.api.example.com")
+
+    params = _get_client_params()
+    assert params["api_url"] == "https://env.api.example.com/chat"
+    assert params["base_url"] == "https://env.api.example.com"
 
 
 @patch("llm.llm_client._get_models")
