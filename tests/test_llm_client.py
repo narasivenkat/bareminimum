@@ -1,6 +1,7 @@
 """Unit tests for llm/llm_client.py."""
 
 from unittest.mock import MagicMock, patch
+import pytest
 
 from llm.llm_client import (
     LLMClient,
@@ -18,6 +19,42 @@ def test_get_client_params_from_env_vars(monkeypatch):
     params = _get_client_params()
     assert params["api_url"] == "https://env.api.example.com/chat"
     assert params["base_url"] == "https://env.api.example.com"
+
+
+def test_get_client_params_derive_base_url_from_api_url(monkeypatch):
+    monkeypatch.setenv("API_URL", "https://custom.api.example.com/v1/chat/completions")
+    monkeypatch.delenv("BASE_API_URL", raising=False)
+    monkeypatch.delenv("LLM_API_URL", raising=False)
+    monkeypatch.delenv("LLM_BASE_API_URL", raising=False)
+
+    with patch("config.config.ConfigManager.get", return_value=None):
+        params = _get_client_params()
+        assert params["api_url"] == "https://custom.api.example.com/v1/chat/completions"
+        assert params["base_url"] == "https://custom.api.example.com/v1"
+
+
+def test_get_client_params_derive_api_url_from_base_url(monkeypatch):
+    monkeypatch.setenv("BASE_API_URL", "https://custom.api.example.com/v1")
+    monkeypatch.delenv("API_URL", raising=False)
+    monkeypatch.delenv("LLM_API_URL", raising=False)
+    monkeypatch.delenv("LLM_BASE_API_URL", raising=False)
+
+    with patch("config.config.ConfigManager.get", return_value=None):
+        params = _get_client_params()
+        assert params["base_url"] == "https://custom.api.example.com/v1"
+        assert params["api_url"] == "https://custom.api.example.com/v1/chat/completions"
+
+
+def test_get_client_params_missing_urls_raises_error(monkeypatch):
+    monkeypatch.delenv("API_URL", raising=False)
+    monkeypatch.delenv("BASE_API_URL", raising=False)
+    monkeypatch.delenv("LLM_API_URL", raising=False)
+    monkeypatch.delenv("LLM_BASE_API_URL", raising=False)
+
+    with patch("config.config.ConfigManager.get", return_value=None):
+        with pytest.raises(RuntimeError) as exc_info:
+            _get_client_params()
+        assert "LLM API base URL is not configured" in str(exc_info.value)
 
 
 @patch("llm.llm_client._get_models")

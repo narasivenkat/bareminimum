@@ -26,9 +26,38 @@ logger = logging.getLogger(__name__)
 def _get_client_params() -> dict[str, Any]:
     """Read generic, model-independent client settings from environment variables or config.yaml."""
     cfg = ConfigManager
+    base_url = os.getenv("LLM_BASE_API_URL") or os.getenv("BASE_API_URL") or cfg.get("LLM", "BASE_API_URL")
+    api_url = os.getenv("LLM_API_URL") or os.getenv("API_URL") or cfg.get("LLM", "API_URL")
+
+    # Derive base_url from api_url if base_url is missing
+    if not base_url and api_url:
+        if api_url.endswith("/chat/completions"):
+            base_url = api_url[:-len("/chat/completions")]
+        elif api_url.endswith("/chat/completions/"):
+            base_url = api_url[:-len("/chat/completions/")]
+        else:
+            base_url = api_url.rstrip("/")
+
+    # Derive api_url from base_url if api_url is missing
+    if not api_url and base_url:
+        if base_url.endswith("/chat/completions"):
+            api_url = base_url
+            base_url = base_url[:-len("/chat/completions")].rstrip("/")
+        elif base_url.endswith("/chat/completions/"):
+            api_url = base_url[:-1]
+            base_url = base_url[:-len("/chat/completions/")].rstrip("/")
+        else:
+            api_url = base_url.rstrip("/") + "/chat/completions"
+
+    if not base_url:
+        raise RuntimeError(
+            "LLM API base URL is not configured. Please set LLM_BASE_API_URL or BASE_API_URL "
+            "(or LLM_API_URL / API_URL) in environment variables or resources/config.yaml."
+        )
+
     return {
-        "base_url": os.getenv("LLM_BASE_API_URL") or os.getenv("BASE_API_URL") or cfg.get("LLM", "BASE_API_URL"),
-        "api_url": os.getenv("LLM_API_URL") or os.getenv("API_URL") or cfg.get("LLM", "API_URL"),
+        "base_url": base_url,
+        "api_url": api_url,
         "max_retries": int(cfg.get("LLM", "RETRY.MAX_RETRIES", "3") or "3"),
         "initial_backoff": float(cfg.get("LLM", "RETRY.INITIAL_BACKOFF", "0.5") or "0.5"),
         "max_backoff": float(cfg.get("LLM", "RETRY.MAX_BACKOFF", "8.0") or "8.0"),

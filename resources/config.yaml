@@ -30,8 +30,6 @@ MEMORY:
 
 LLM:
   # --- Generic settings (shared by every model) ---
-  API_URL: https://api.pivpn.core.ford.com/fordllmapi/api/v1/chat/completions
-  BASE_API_URL: https://api.pivpn.core.ford.com/fordllmapi/api/v1
   STREAM: false
   STREAM_TIMEOUT: 60.0
   RETRY.MAX_RETRIES: 3
