@@ -102,6 +102,7 @@ The harness includes launch scripts that automatically manage PATH configuration
    - Creates a `.venv` virtual environment in the harness directory if missing.
    - Upgrades `pip` and installs dependencies from `requirements.txt`.
    - Sets `HARNESS_WORKSPACE` to your current working directory.
+   - Sets `BAREMINIMUM_DIR` to the harness installation directory.
    - Launches `run.py`.
 
 ---
@@ -141,6 +142,7 @@ The harness includes launch scripts that automatically manage PATH configuration
    - Creates a `.venv` virtual environment in the harness directory if missing.
    - Upgrades `pip` and installs dependencies from `requirements.txt`.
    - Sets `HARNESS_WORKSPACE` to your current working directory.
+   - Sets `BAREMINIMUM_DIR` to the harness installation directory.
    - Launches `run.py`.
 
 ---
@@ -243,6 +245,7 @@ $env:HTTP_PROXY_URL="http://proxy.example.com:8080"
 | `USE_PROXY` | Enable/disable HTTP proxy (`true`/`false`) |
 | `HTTP_PROXY_URL` | Proxy endpoint URL (e.g., `http://proxy.example.com:8080`) |
 | `HARNESS_WORKSPACE` | Root folder path for agent file tool operations |
+| `BAREMINIMUM_DIR` | Root source code directory path for the harness installation |
 
 ---
 

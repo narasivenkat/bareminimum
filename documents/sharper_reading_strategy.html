@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Guide: Sharpening File Reading Operations — BareMinimum Harness</title>
+    <style>
+        :root {
+            --primary-color: #38bdf8;
+            --primary-hover: #0284c7;
+            --secondary-color: #0f172a;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --heading-color: #ffffff;
+            --border-color: #334155;
+            --code-bg: #090d16;
+            --code-text: #e2e8f0;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
+            --accent-red: #f87171;
+            --info-bg: rgba(12, 74, 110, 0.4);
+            --info-border: #0284c7;
+            --info-text: #bae6fd;
+            --warning-bg: rgba(67, 20, 7, 0.4);
+            --warning-border: #9a3412;
+            --warning-text: #fdba74;
+            --success-bg: rgba(5, 46, 22, 0.4);
+            --success-border: #166534;
+            --success-text: #86efac;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.65;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 290px;
+            background-color: #0b1120;
+            color: #94a3b8;
+            padding: 2rem 1.25rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .sidebar h2 {
+            color: #f8fafc;
+            font-size: 1.15rem;
+            margin-bottom: 0.25rem;
+            font-weight: 700;
+        }
+
+        .sidebar .subtitle {
+            font-size: 0.8rem;
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.6rem;
+        }
+
+        .sidebar a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            padding: 0.45rem 0.65rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #1e293b;
+            color: var(--accent-blue);
+        }
+
+        .sidebar a.nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            background-color: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .sidebar a.nav-back:hover {
+            background-color: rgba(56, 189, 248, 0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 290px;
+            padding: 3rem 4rem;
+            max-width: 1150px;
+            width: 100%;
+        }
+
+        .main-content a {
+            color: var(--accent-blue);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.2s ease;
+        }
+
+        .main-content a:hover {
+            color: #7dd3fc;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.3rem;
+            color: var(--heading-color);
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+
+        header p.lead {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 900px;
+        }
+
+        .meta-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.25rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .badge-tag {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        section {
+            margin-bottom: 3.5rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 1.7rem;
+            color: var(--heading-color);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h2 span.num {
+            color: var(--accent-blue);
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+            margin: 1.75rem 0 0.85rem 0;
+        }
+
+        h4 {
+            font-size: 1.05rem;
+            color: #e2e8f0;
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1.1rem;
+            color: #cbd5e1;
+        }
+
+        ul, ol {
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            color: #cbd5e1;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        code {
+            font-family: "Fira Code", Monaco, Consolas, "Courier New", monospace;
+            background-color: var(--code-bg);
+            color: var(--accent-blue);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: 1px solid var(--border-color);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: var(--code-text);
+            padding: 0;
+            border: none;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid;
+        }
+
+        .callout.info {
+            background-color: var(--info-bg);
+            border-color: var(--info-border);
+            color: var(--info-text);
+        }
+
+        .callout.warning {
+            background-color: var(--warning-bg);
+            border-color: var(--warning-border);
+            color: var(--warning-text);
+        }
+
+        .callout.success {
+            background-color: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .callout h4 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 1.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        th, td {
+            padding: 0.85rem 1.1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--card-bg);
+            color: var(--heading-color);
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(30, 41, 59, 0.4);
+        }
+
+        tr:hover {
+            background-color: rgba(30, 41, 59, 0.8);
+        }
+
+        /* Responsive Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .card h4 {
+            color: var(--accent-blue);
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card ul {
+            padding-left: 1.2rem;
+            margin-bottom: 0;
+        }
+
+        /* Diagrams */
+        .diagram-box {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .diagram-title {
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <a href="index.html" class="nav-back">← Back to Hub</a>
+        <h2>Reading Strategy</h2>
+        <div class="subtitle">Agent Context Optimization</div>
+        <ul>
+            <li><a href="#summary">1. Executive Summary</a></li>
+            <li><a href="#root-causes">2. Root Cause Analysis</a></li>
+            <li><a href="#can-reads-be-sharper">3. Can Reads Be Made Sharper?</a></li>
+            <li><a href="#strategies">4. Comprehensive Strategy</a></li>
+            <li><a href="#comparison">5. Execution Comparison</a></li>
+            <li><a href="#recommendations">6. Implementation Recommendations</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header>
+            <h1>Strategy Guide: Sharpening File Reading Operations & Eliminating Redundant Agent Reads</h1>
+            <p class="lead">An operational and architectural strategy for minimizing file context consumption, reducing token overhead, and sharpening autonomous agent file inspection mechanisms.</p>
+            <div class="meta-bar">
+                <div class="meta-item"><span class="badge-tag">Context Window Optimization</span></div>
+                <div class="meta-item"><span>Target Audience: AI Engineers, System Architects, Agent Harness Developers</span></div>
+                <div class="meta-item"><span>Status: Technical Strategy</span></div>
+            </div>
+        </header>
+
+        <!-- Section 1: Executive Summary -->
+        <section id="summary">
+            <h2><span class="num">01</span> Executive Summary</h2>
+            <p>When tasked with updating benchmark links in <code>documents/evaluation_benchmarking_guide.html</code>, an autonomous agent or orchestrator might perform broad read operations across unrelated files (such as <code>documents/governance_security_guide.html</code> and <code>documents/orchestrator_subagents_guide.html</code>). While this behavior stems from exploratory sub-agent patterns and broad context gathering, it consumes unnecessary context window capacity, increases token costs, and slows task completion.</p>
+
+            <p>This document analyzes the root causes of redundant file reading, outlines how file reads can be made significantly sharper, and provides a concrete technical and operational strategy for minimizing file context consumption.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>The Problem: Broad Reading Fatigue</h4>
+                    <p>Unconstrained agents load full file contents for adjacent documents, burning 5,000–20,000+ tokens per turn on unrelated CSS, navigation boilerplate, and structural headers before editing a single line.</p>
+                </div>
+                <div class="card">
+                    <h4>The Solution: Targeted Precision Reading</h4>
+                    <p>Enforce strict single-file scope, line-bounded windowed reads (<code>start_line</code> / <code>end_line</code>), search-before-read patterns, and orchestrator-level single-file locks to eliminate 80–90% of context noise.</p>
+                </div>
+            </div>
+
+            <div class="callout info">
+                <h4>💡 Core Efficiency Principle</h4>
+                <p>An agent harness should treat context window tokens as a scarce resource. Reading only the required target file and line ranges yields faster task completion, lower API costs, and significantly reduced risk of context contamination or hallucinated cross-document edits.</p>
+            </div>
+        </section>
+
+        <!-- Section 2: Root Cause Analysis -->
+        <section id="root-causes">
+            <h2><span class="num">02</span> Root Cause Analysis: Why Unrelated HTML Files Were Read</h2>
+            <p>Understanding why an autonomous agent reads secondary or adjacent files is essential for engineering effective guardrails. Four primary technical drivers cause broad file reading:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Root Cause Vector</th>
+                            <th>Mechanism / Driver</th>
+                            <th>Impact on Context & Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1</strong></td>
+                            <td><strong>Broad Structural Discovery & Template Consistency Checking</strong></td>
+                            <td>In documentation repositories, HTML files share structural components (navbars, headers, footers, external links). Agents attempt exploratory reads across adjacent HTML files to verify if link updates must propagate globally.</td>
+                            <td>Loads thousands of redundant boilerplate lines into conversation history.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2</strong></td>
+                            <td><strong>Unbounded Initial Context Gathering</strong></td>
+                            <td>Without explicit file-level boundaries or line-range constraints in the initial task prompt, agents default to workspace discovery by listing directories and pre-fetching neighboring files.</td>
+                            <td>Consumes context window tokens before the agent plans its first edit step.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3</strong></td>
+                            <td><strong>Orchestrator Pre-Fetching Patterns</strong></td>
+                            <td>Orchestrator models with sub-agent architectures execute broad multi-file read requests (<code>list_dir</code> followed by parallel <code>read_file</code> calls across all discovered files) to build an internal mental map.</td>
+                            <td>High token consumption and parallel sub-agent fan-out across unrequested targets.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>4</strong></td>
+                            <td><strong>Deferred Dependency Checking</strong></td>
+                            <td>The agent reads secondary files <em>before</em> confirming whether <code>evaluation_benchmarking_guide.html</code> actually has direct dependencies or cross-references pointing to adjacent files.</td>
+                            <td>Speculative reads that yield zero actionable context for the prompt.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 3: Can Reads Be Made Sharper? -->
+        <section id="can-reads-be-sharper">
+            <h2><span class="num">03</span> Can Reads Be Made Sharper?</h2>
+            <p><strong>Yes.</strong> File reads can be narrowed precisely to the target file and specific target sections by implementing four concrete mechanisms:</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>1. Target Isolation Protocols</h4>
+                    <p>Restricting initial tool executions exclusively to specified target files, suppressing exploratory multi-file directory scans unless cross-references require validation.</p>
+                </div>
+                <div class="card">
+                    <h4>2. Line-Bounded Reading</h4>
+                    <p>Utilizing parameter-constrained file reading (<code>start_line</code> / <code>end_line</code>) to fetch only relevant line windows rather than full multi-hundred line documents.</p>
+                </div>
+                <div class="card">
+                    <h4>3. Pattern-Based Grep Search</h4>
+                    <p>Leveraging pattern search tools (<code>file_search</code>) to locate exact line numbers prior to content ingestion instead of dumping whole files into LLM context.</p>
+                </div>
+                <div class="card">
+                    <h4>4. Dependency-Gated Reads</h4>
+                    <p>Fetching secondary files conditionally <em>only if</em> explicit references, imports, or hyperlinks are discovered inside the target file content.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Comprehensive Strategy -->
+        <section id="strategies">
+            <h2><span class="num">04</span> Comprehensive Strategy for Sharper File Reading</h2>
+            <p>To achieve minimal context consumption and maximum operational speed, agent harnesses and prompt pipelines must enforce five core strategies:</p>
+
+            <div class="diagram-box">
+                <div class="diagram-title">Unsharpened vs. Sharpened File Reading Flow</div>
+                <svg viewBox="0 0 800 280" style="width: 100%; height: auto; font-family: sans-serif;">
+                    <rect x="10" y="10" width="780" height="260" rx="8" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                    
+                    <!-- Unsharpened Pipeline -->
+                    <text x="200" y="35" fill="#f87171" font-size="13" font-weight="bold" text-anchor="middle">❌ Unsharpened Reading Flow</text>
+                    <rect x="30" y="50" width="340" height="40" rx="5" fill="#0b1120" stroke="#f87171"/>
+                    <text x="200" y="75" fill="#e2e8f0" font-size="11" text-anchor="middle">list_dir("documents/") → Discover 4 HTML files</text>
+                    <path d="M 200 90 L 200 110" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <rect x="30" y="110" width="340" height="60" rx="5" fill="#450a0a" stroke="#f87171"/>
+                    <text x="200" y="133" fill="#fca5a5" font-size="11" font-weight="bold" text-anchor="middle">Parallel read_file across ALL 4 files</text>
+                    <text x="200" y="153" fill="#cbd5e1" font-size="10" text-anchor="middle">(High Token Consumption: ~15,000+ tokens loaded)</text>
+
+                    <!-- Sharpened Pipeline -->
+                    <text x="600" y="35" fill="#4ade80" font-size="13" font-weight="bold" text-anchor="middle">✅ Sharpened Reading Flow</text>
+                    <rect x="430" y="50" width="340" height="40" rx="5" fill="#0b1120" stroke="#4ade80"/>
+                    <text x="600" y="75" fill="#e2e8f0" font-size="11" text-anchor="middle">Target Isolation: Focus strictly on target file</text>
+                    <path d="M 600 90 L 600 110" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <rect x="430" y="110" width="340" height="60" rx="5" fill="#052e16" stroke="#4ade80"/>
+                    <text x="600" y="133" fill="#86efac" font-size="11" font-weight="bold" text-anchor="middle">Search pattern → Bounded read_file(start_line, end_line)</text>
+                    <text x="600" y="153" fill="#cbd5e1" font-size="10" text-anchor="middle">(Minimal Context: ~800 tokens loaded)</text>
+
+                    <!-- Summary Callout below -->
+                    <rect x="30" y="190" width="740" height="60" rx="6" fill="#0b1120" stroke="#38bdf8"/>
+                    <text x="400" y="215" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">Result: 90%+ Context Window Savings & Faster Execution Velocity</text>
+                    <text x="400" y="235" fill="#94a3b8" font-size="11" text-anchor="middle">Eliminates noise from CSS, sidebars, and unrelated document structures.</text>
+                </svg>
+            </div>
+
+            <div id="strategy-1">
+                <h3>Strategy 1: Target-First Isolation Principle (Strict Single-File Scope)</h3>
+                <p>When a task explicitly names a target file (e.g., <code>documents/evaluation_benchmarking_guide.html</code>), the agent must inspect <strong>only</strong> that target file in its initial turn.</p>
+                <ul>
+                    <li><strong>Lazy Evaluation of Adjacent Files:</strong> Secondary files in the same directory must remain unread unless:
+                        <ol>
+                            <li>The target file contains relative cross-references (e.g. <code>href="governance_security_guide.html"</code>) that directly affect the prompt requirements.</li>
+                            <li>The user prompt explicitly requests multi-file synchronization (e.g., <em>"update benchmark links across all documentation pages"</em>).</li>
+                        </ol>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="strategy-2">
+                <h3>Strategy 2: Bounded & Windowed Reading (<code>start_line</code> and <code>end_line</code>)</h3>
+                <p>Rather than loading multi-hundred-line documents into context, reading should be constrained using line ranges.</p>
+                <div class="card">
+                    <h4>Bounded Reading Workflow</h4>
+                    <ol>
+                        <li>Use pattern search to locate relevant line numbers (e.g., search for <code>"href="</code> or <code>"benchmark"</code>).</li>
+                        <li>Perform targeted reads with <code>start_line</code> and <code>end_line</code> parameters around the target match (e.g., lines 40 to 80).</li>
+                    </ol>
+                    <p style="margin-top: 0.75rem; margin-bottom: 0;"><strong>Benefits:</strong> Reduces context usage by 80–90% and eliminates noise from unrelated boilerplate (CSS styling, navigation markup, scripts).</p>
+                </div>
+            </div>
+
+            <div id="strategy-3">
+                <h3>Strategy 3: Pattern Searching Prior to File Content Ingestion</h3>
+                <p>Implement the <strong>Search-Before-Read Pattern</strong> across agent workflows:</p>
+                <pre><code># Step 1: Search for relevant URL patterns without ingesting full content
+file_search(pattern="*swebench*", path="documents/")
+
+# Step 2: Ingest strictly the target line window returned by search
+read_file(path="documents/evaluation_benchmarking_guide.html", start_line="450", end_line="490")</code></pre>
+            </div>
+
+            <div id="strategy-4">
+                <h3>Strategy 4: Scope-Constrained Prompting & Guardrails</h3>
+                <p>Enforce strict task boundaries through system prompt rules and direct user prompt instructions:</p>
+                <div class="callout warning">
+                    <h4>Prompt Directive Example</h4>
+                    <p><em>"Update the benchmark links in evaluation_benchmarking_guide.html. Do not inspect or modify other HTML files in documents/ unless cross-references in evaluation_benchmarking_guide.html require verification."</em></p>
+                </div>
+            </div>
+
+            <div id="strategy-5">
+                <h3>Strategy 5: Orchestrator Read-Minimization Heuristics</h3>
+                <ul>
+                    <li><strong>Single-File Lock Filter:</strong> When the user prompt names a specific file path, the orchestrator sets a single-file focus lock, preventing parallel sub-agents from dispatching read calls to adjacent files.</li>
+                    <li><strong>Pre-Execution Dependency Graph:</strong> The orchestrator verifies whether links inside <code>evaluation_benchmarking_guide.html</code> link out to adjacent guides before allowing secondary read dispatches.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Section 5: Execution Comparison -->
+        <section id="comparison">
+            <h2><span class="num">05</span> Comparison: Unsharpened vs. Sharpened Execution</h2>
+            <p>Below is a comparative breakdown of agent performance metrics under unsharpened versus sharpened reading patterns:</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Unsharpened Reading Pattern</th>
+                            <th>Sharpened Reading Pattern</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Initial Operation</strong></td>
+                            <td><code>list_dir("documents/")</code> → Reads <code>index.html</code>, <code>governance_security_guide.html</code>, <code>orchestrator_subagents_guide.html</code>, <code>evaluation_benchmarking_guide.html</code></td>
+                            <td>Directly calls <code>read_file("documents/evaluation_benchmarking_guide.html")</code> or uses <code>file_search</code> pattern targeting.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Token Usage</strong></td>
+                            <td><strong>High</strong> (5,000–20,000+ tokens loaded for unrelated documents)</td>
+                            <td><strong>Minimal</strong> (500–1,500 tokens for target file or line range)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Execution Speed</strong></td>
+                            <td><strong>Slower</strong> (multiple sequential/parallel network turns, heavy prompt payload)</td>
+                            <td><strong>Faster</strong> (single targeted read turn, minimal latency)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Risk of Context Contamination</strong></td>
+                            <td><strong>High</strong> (model may hallucinate cross-document edits or misapply changes across files)</td>
+                            <td><strong>Low</strong> (model context is focused strictly on the relevant task target)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 6: Implementation Recommendations -->
+        <section id="recommendations">
+            <h2><span class="num">06</span> Implementation Recommendations for Developer Workflows</h2>
+            <p>To implement sharpened file reading in production agent coding systems, adopt the following four recommendations:</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>1. Specify Exact File Targets</h4>
+                    <p>Always mention explicit target relative file paths when prompting the agent system, avoiding vague instructions like <em>"update the docs"</em>.</p>
+                </div>
+                <div class="card">
+                    <h4>2. Utilize Range Parameters</h4>
+                    <p>Encourage agents and tools to supply <code>start_line</code> and <code>end_line</code> parameters during file reading operations.</p>
+                </div>
+                <div class="card">
+                    <h4>3. Incorporate Strict Prompt Directives</h4>
+                    <p>Include explicit single-target scope directives in system prompts and sub-agent instructions to inhibit exploratory directory scanning.</p>
+                </div>
+                <div class="card">
+                    <h4>4. Audit Tool Call Traces</h4>
+                    <p>Monitor agent execution traces in JSON audit logs (<code>log/log.py</code>) to identify and eliminate broad file reading patterns early.</p>
+                </div>
+            </div>
+
+            <div class="callout success">
+                <h4>✅ Summary Checklist for Sharpened Reading</h4>
+                <ul>
+                    <li>✔ Target single file on initial turn.</li>
+                    <li>✔ Use <code>file_search</code> prior to full file reads.</li>
+                    <li>✔ Pass <code>start_line</code> and <code>end_line</code> bounds.</li>
+                    <li>✔ Enforce single-file focus lock in orchestrator.</li>
+                    <li>✔ Audit log traces for broad read detection.</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <p>© BareMinimum Harness Technical Documentation Hub • Strategy Guide: Sharpening File Reading Operations</p>
+        </footer>
+    </main>
+
+</body>
+</html>

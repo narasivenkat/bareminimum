@@ -14,6 +14,7 @@
             --accent-blue: #38bdf8;
             --accent-green: #4ade80;
             --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -22,7 +23,7 @@
             color: var(--text-color);
             line-height: 1.6;
             padding: 3rem 2rem;
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
         }
         header {
@@ -42,7 +43,7 @@
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
         }
         .card {
@@ -62,12 +63,18 @@
             border-color: var(--accent-blue);
         }
         .card h2 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             color: var(--accent-blue);
             margin-bottom: 0.75rem;
         }
         .card.sec h2 {
             color: var(--accent-green);
+        }
+        .card.eval h2 {
+            color: var(--accent-purple);
+        }
+        .card.strat h2 {
+            color: var(--accent-orange);
         }
         .card p {
             color: #cbd5e1;
@@ -97,7 +104,7 @@
 <body>
     <header>
         <h1>BareMinimum Harness Architecture Hub</h1>
-        <p>Comprehensive design documents, sub-agent orchestrator guides, and security frameworks.</p>
+        <p>Comprehensive design documents, sub-agent orchestrator guides, evaluation frameworks, security systems, and reading optimization strategies.</p>
     </header>
 
     <div class="grid">
@@ -118,6 +125,26 @@
             </div>
             <div>
                 <span class="badge" style="color: var(--accent-green); border-color: var(--accent-green);">Prompt Injection • HITL • Audit Logs • Circuit Breaker</span>
+            </div>
+        </a>
+
+        <a href="evaluation_benchmarking_guide.html" class="card eval">
+            <div>
+                <h2>3. Evaluating & Benchmarking Agent Coding Harnesses</h2>
+                <p>Engineering guide on methodologies, metrics (Pass@k, Resolved Rate), benchmark datasets (SWE-bench, HumanEval), ephemeral sandbox execution, and implementation patterns for evaluating AI coding harnesses.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-purple); border-color: var(--accent-purple);">SWE-bench • Pass@k • Metrics • Sandbox Pipeline</span>
+            </div>
+        </a>
+
+        <a href="sharper_reading_strategy.html" class="card strat">
+            <div>
+                <h2>4. Sharpening File Reading Operations Strategy Guide</h2>
+                <p>Operational strategy for eliminating redundant agent reads, enforcing target-first single file isolation, line-bounded windowed reads, pattern searching, and context window token optimization.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-orange); border-color: var(--accent-orange);">Context Optimization • Single-File Scope • Bounded Reads</span>
             </div>
         </a>
     </div>

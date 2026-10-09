@@ -79,6 +79,10 @@ if [ -z "${HARNESS_WORKSPACE:-}" ]; then
     export HARNESS_WORKSPACE="$CALLER_DIR"
 fi
 
+if [ -z "${BAREMINIMUM_DIR:-}" ]; then
+    export BAREMINIMUM_DIR="$SCRIPT_DIR"
+fi
+
 cd "$CALLER_DIR"
 echo "[setup] Starting run.py in \"$CALLER_DIR\" ..."
 

@@ -1,5 +1,6 @@
 """Unit tests for config/config.py."""
 
+import os
 import tempfile
 import pytest
 from pathlib import Path
@@ -90,3 +91,34 @@ def test_config_manager_non_dict_yaml(tmp_path):
     with pytest.raises(ConfigurationError) as exc_info:
         ConfigManager.get("OAuth", "CLIENT_ID")
     assert "must contain a mapping" in str(exc_info.value)
+
+
+def test_get_bareminimum_dir_and_config_path_default():
+    ConfigManager.reset()
+    bareminimum_dir = ConfigManager.get_bareminimum_dir()
+    harness_dir = ConfigManager.get_harness_dir()
+    expected_root = Path(__file__).resolve().parent.parent
+    assert bareminimum_dir == expected_root
+    assert harness_dir == expected_root
+
+    config_path = ConfigManager.get_config_file_path()
+    assert config_path == str(expected_root / "resources" / "config.yaml")
+
+
+def test_get_bareminimum_dir_and_config_path_env_var(monkeypatch, tmp_path):
+    ConfigManager.reset()
+    custom_dir = tmp_path / "custom_bareminimum"
+    custom_dir.mkdir()
+    monkeypatch.setenv("BAREMINIMUM_DIR", str(custom_dir))
+
+    assert ConfigManager.get_bareminimum_dir() == custom_dir.resolve()
+    assert ConfigManager.get_harness_dir() == custom_dir.resolve()
+    assert ConfigManager.get_config_file_path() == str(custom_dir.resolve() / "resources" / "config.yaml")
+
+
+def test_get_config_file_path_direct_env_var(monkeypatch, tmp_path):
+    ConfigManager.reset()
+    custom_config = tmp_path / "custom_config.yaml"
+    monkeypatch.setenv("HARNESS_CONFIG", str(custom_config))
+
+    assert ConfigManager.get_config_file_path() == str(custom_config)

@@ -28,10 +28,41 @@ class ConfigManager:
     """
 
     _config: Optional[Dict[str, Dict[str, Any]]] = None
-    _config_file_path: str = str(Path(__file__).parent.parent / "resources" / "config.yaml")
+    _config_file_path: Optional[str] = None
 
     @classmethod
-    def set_config_file_path(cls, path: str) -> None:
+    def get_bareminimum_dir(cls) -> Path:
+        """Return the bareminimum source code root directory without hardcoding."""
+        for env_var in (
+            "BAREMINIMUM_DIR",
+            "BAREMINIMUM_HOME",
+            "BAREMINIMUM_ROOT",
+            "BAREMINIMUM_SOURCE_DIR",
+            "BAREMINIMUM_SOURCE",
+        ):
+            val = os.getenv(env_var)
+            if val:
+                return Path(val).resolve()
+        return Path(__file__).resolve().parent.parent
+
+    @classmethod
+    def get_harness_dir(cls) -> Path:
+        """Return the bareminimum source code root directory (backward-compatible alias)."""
+        return cls.get_bareminimum_dir()
+
+    @classmethod
+    def get_config_file_path(cls) -> str:
+        """Return the configuration file path."""
+        if cls._config_file_path is not None:
+            return cls._config_file_path
+        for env_var in ("HARNESS_CONFIG", "HARNESS_CONFIG_PATH"):
+            val = os.getenv(env_var)
+            if val:
+                return val
+        return str(cls.get_bareminimum_dir() / "resources" / "config.yaml")
+
+    @classmethod
+    def set_config_file_path(cls, path: Optional[str]) -> None:
         """Set the configuration file path (useful for testing or custom configs)."""
         cls._config_file_path = path
         cls._config = None
@@ -40,6 +71,7 @@ class ConfigManager:
     def reset(cls) -> None:
         """Reset the cached configuration."""
         cls._config = None
+        cls._config_file_path = None
 
     @classmethod
     def _ensure_config_loaded(cls) -> None:
@@ -51,7 +83,7 @@ class ConfigManager:
     @classmethod
     def _load_config(cls) -> None:
         """Loads configuration from YAML into class-level _config."""
-        config_path = cls._config_file_path
+        config_path = cls.get_config_file_path()
         if os.path.exists(config_path):
             try:
                 with open(config_path, "r", encoding="utf-8") as fh:

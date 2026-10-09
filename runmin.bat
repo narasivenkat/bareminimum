@@ -69,6 +69,9 @@ REM The harness tools resolve paths against HARNESS_WORKSPACE (see
 REM tools/_common.py). Default it to the caller's directory and switch the
 REM working directory there so the agent acts where runmin was launched from.
 if not defined HARNESS_WORKSPACE set "HARNESS_WORKSPACE=%CALLER_DIR%"
+if not defined BAREMINIMUM_DIR set "BAREMINIMUM_DIR=%SCRIPT_DIR%"
+if "%BAREMINIMUM_DIR:~-1%"=="\" set "BAREMINIMUM_DIR=%BAREMINIMUM_DIR:~0,-1%"
+
 cd /d "%CALLER_DIR%"
 echo [setup] Starting run.py in "%CALLER_DIR%" ...
 "%VENV_PY%" "%SCRIPT_DIR%run.py" %*
