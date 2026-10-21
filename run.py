@@ -164,7 +164,8 @@ def start_cli() -> None:
             print(
                 f"\n[Tokens: {result.input_tokens} in, {result.output_tokens} out "
                 f"({result.input_tokens + result.output_tokens} total) | "
-                f"Cost: ${result.total_cost:.6f}]"
+                f"Cost: ${result.total_cost:.6f} | "
+                f"Time: {result.elapsed_time:.2f}s]"
             )
 
         except (KeyboardInterrupt, EOFError):
@@ -195,7 +196,8 @@ def main() -> None:
             print(
                 f"\n[Tokens: {result.input_tokens} in, {result.output_tokens} out "
                 f"({result.input_tokens + result.output_tokens} total) | "
-                f"Cost: ${result.total_cost:.6f}]"
+                f"Cost: ${result.total_cost:.6f} | "
+                f"Time: {result.elapsed_time:.2f}s]"
             )
     else:
         start_cli()

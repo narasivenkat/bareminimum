@@ -13,6 +13,8 @@ def test_run_agent_simple_final_answer():
     assert res.final_text == "Done!"
     assert res.stop_reason == STOP_FINAL_ANSWER
     assert res.turns == 1
+    assert res.elapsed_time >= 0.0
+    assert res.metadata["elapsed_time"] == res.elapsed_time
 
 
 def test_run_agent_tool_interaction():
@@ -47,6 +49,7 @@ def test_run_agent_tool_interaction():
     assert res.stop_reason == STOP_FINAL_ANSWER
     assert res.turns == 2
     assert res.tool_calls == 1
+    assert res.elapsed_time >= 0.0
 
 
 def test_run_agent_parallel_read_tool_calls():
@@ -104,6 +107,7 @@ def test_run_agent_parallel_read_tool_calls():
         assert tool_msgs[0]["tool_call_id"] == "call_1"
         assert tool_msgs[1]["tool_call_id"] == "call_2"
         assert tool_msgs[2]["tool_call_id"] == "call_3"
+        assert res.elapsed_time >= 0.0
 
 
 def test_run_agent_max_turns():
@@ -123,3 +127,5 @@ def test_run_agent_max_turns():
     res = run_agent("Loop forever", model=mock_model, max_turns=2)
     assert res.turns == 2
     assert res.stop_reason == STOP_MAX_TURNS
+    assert res.elapsed_time >= 0.0
+    assert res.metadata["elapsed_time"] == res.elapsed_time

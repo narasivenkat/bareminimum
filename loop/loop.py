@@ -27,6 +27,7 @@ A tool call inside an assistant message::
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import time
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from config.config import ConfigManager
@@ -99,6 +100,7 @@ class AgentResult:
     input_tokens: int = 0
     output_tokens: int = 0
     total_cost: float = 0.0
+    elapsed_time: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -147,6 +149,7 @@ def run_agent(
     if not callable(model):
         raise ValueError("`model` must be a callable.")
 
+    start_time = time.perf_counter()
     registry = tools if tools is not None else ToolRegistry()
     limit = resolve_max_turns(max_turns)
 
@@ -195,6 +198,7 @@ def run_agent(
         if not tool_calls:
             logger.debug("Agent finished with a final answer on turn %d.", turns)
             total_cost = token_tracker.calculate_cost(model_name=model_name)
+            elapsed_time = time.perf_counter() - start_time
             return AgentResult(
                 final_text=assistant.get("content") or "",
                 messages=conversation,
@@ -204,12 +208,14 @@ def run_agent(
                 input_tokens=token_tracker.input_tokens,
                 output_tokens=token_tracker.output_tokens,
                 total_cost=total_cost,
+                elapsed_time=elapsed_time,
                 metadata={
                     "compactions": compaction_count,
                     "input_tokens": token_tracker.input_tokens,
                     "output_tokens": token_tracker.output_tokens,
                     "total_tokens": token_tracker.total_tokens,
                     "total_cost": total_cost,
+                    "elapsed_time": elapsed_time,
                 },
             )
 
@@ -260,6 +266,7 @@ def run_agent(
         logger.warning("Forced final answer failed: %s", exc)
 
     total_cost = token_tracker.calculate_cost(model_name=model_name)
+    elapsed_time = time.perf_counter() - start_time
     return AgentResult(
         final_text=final_text,
         messages=conversation,
@@ -269,12 +276,14 @@ def run_agent(
         input_tokens=token_tracker.input_tokens,
         output_tokens=token_tracker.output_tokens,
         total_cost=total_cost,
+        elapsed_time=elapsed_time,
         metadata={
             "compactions": compaction_count,
             "input_tokens": token_tracker.input_tokens,
             "output_tokens": token_tracker.output_tokens,
             "total_tokens": token_tracker.total_tokens,
             "total_cost": total_cost,
+            "elapsed_time": elapsed_time,
         },
     )
 

@@ -108,6 +108,10 @@ def test_start_cli_task_execution(mock_registry, mock_run_agent, monkeypatch, ca
         messages=[],
         turns=1,
         stop_reason=STOP_FINAL_ANSWER,
+        input_tokens=100,
+        output_tokens=50,
+        total_cost=0.000123,
+        elapsed_time=1.45,
     )
 
     inputs = iter(["Test task input", KeyboardInterrupt()])
@@ -128,6 +132,7 @@ def test_start_cli_task_execution(mock_registry, mock_run_agent, monkeypatch, ca
     assert mock_run_agent.call_args[0][0] == "Test task input"
     captured = capsys.readouterr().out
     assert "Task finished successfully" in captured
+    assert "[Tokens: 100 in, 50 out (150 total) | Cost: $0.000123 | Time: 1.45s]" in captured
 
 
 @patch("run.change_model_dialog")
@@ -206,6 +211,10 @@ def test_main_with_args(mock_registry, mock_run_agent, monkeypatch, capsys):
         messages=[],
         turns=1,
         stop_reason=STOP_FINAL_ANSWER,
+        input_tokens=200,
+        output_tokens=80,
+        total_cost=0.000250,
+        elapsed_time=2.10,
     )
 
     monkeypatch.setattr(sys, "argv", ["run.py", "Perform direct task"])
@@ -215,6 +224,7 @@ def test_main_with_args(mock_registry, mock_run_agent, monkeypatch, capsys):
     assert mock_run_agent.call_args[0][0] == "Perform direct task"
     captured = capsys.readouterr().out
     assert "Direct task output" in captured
+    assert "[Tokens: 200 in, 80 out (280 total) | Cost: $0.000250 | Time: 2.10s]" in captured
 
 
 @patch("run.run_bash_mode")
