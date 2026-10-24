@@ -17,7 +17,7 @@ from memory.token_counter import count_tokens
 logger = logging.getLogger(__name__)
 
 _DEFAULT_CONTEXT_WINDOW = 128000
-_DEFAULT_THRESHOLD_PCT = 70.0
+_DEFAULT_THRESHOLD_PCT = 50.0
 _DEFAULT_KEEP_RECENT = 6
 _DEFAULT_TOKEN_ENCODING = "cl100k_base"
 

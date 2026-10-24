@@ -6,6 +6,7 @@ from loop.loop import (
     ToolSpec,
     run_agent,
     make_llm_model,
+    prune_historical_tool_outputs,
     DEFAULT_SYSTEM_PROMPT,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "ToolSpec",
     "run_agent",
     "make_llm_model",
+    "prune_historical_tool_outputs",
     "DEFAULT_SYSTEM_PROMPT",
 ]

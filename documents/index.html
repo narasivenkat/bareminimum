@@ -15,6 +15,8 @@
             --accent-green: #4ade80;
             --accent-purple: #c084fc;
             --accent-orange: #fb923c;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #f472b6;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -76,6 +78,12 @@
         .card.strat h2 {
             color: var(--accent-orange);
         }
+        .card.tok h2 {
+            color: var(--accent-cyan);
+        }
+        .card.graph h2 {
+            color: var(--accent-pink);
+        }
         .card p {
             color: #cbd5e1;
             font-size: 0.95rem;
@@ -104,7 +112,7 @@
 <body>
     <header>
         <h1>BareMinimum Harness Architecture Hub</h1>
-        <p>Comprehensive design documents, sub-agent orchestrator guides, evaluation frameworks, security systems, and reading optimization strategies.</p>
+        <p>Comprehensive design documents, sub-agent orchestrator guides, evaluation frameworks, security systems, reading optimization strategies, token usage reduction guides, and Graph RAG specifications.</p>
     </header>
 
     <div class="grid">
@@ -145,6 +153,26 @@
             </div>
             <div>
                 <span class="badge" style="color: var(--accent-orange); border-color: var(--accent-orange);">Context Optimization • Single-File Scope • Bounded Reads</span>
+            </div>
+        </a>
+
+        <a href="token_usage_optimization_guide.html" class="card tok">
+            <div>
+                <h2>5. Harness Token Usage Optimization Guide</h2>
+                <p>Engineering guide detailing codebase opportunities to reduce token consumption by 60%–85%: tool schema deduplication, historical output pruning, compact serialization, diff truncation, and proactive memory compaction while preserving harness performance.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">Token Reduction • Schema Deduplication • History Pruning • 85% Savings</span>
+            </div>
+        </a>
+
+        <a href="graph_rag_token_optimization_guide.html" class="card graph">
+            <div>
+                <h2>6. Graph RAG Token Optimization Guide</h2>
+                <p>Architectural guide and production implementation for indexing Java (Spring Boot), React (Next.js), and Markdown docs into Neo4j with multi-repo scoping, incremental reindexing, and BareMinimum tool integration yielding 90%+ token savings.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-pink); border-color: var(--accent-pink);">Graph RAG • Neo4j 5.x • Spring Boot & Next.js • Delta Indexing</span>
             </div>
         </a>
     </div>

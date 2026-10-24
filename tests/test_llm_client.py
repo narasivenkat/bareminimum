@@ -7,9 +7,43 @@ from llm.llm_client import (
     LLMClient,
     _get_client_params,
     _get_model_params,
+    _sanitize_messages,
     available_models,
     default_model,
+    extract_api_usage,
 )
+
+
+def test_extract_api_usage():
+    # Test None input
+    assert extract_api_usage(None) == {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    # Test dictionary usage
+    completion_dict = {
+        "usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+            "total_tokens": 150,
+        }
+    }
+    assert extract_api_usage(completion_dict) == {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150}
+
+    # Test object usage
+    mock_usage = MagicMock(prompt_tokens=200, completion_tokens=80, total_tokens=280)
+    mock_completion = MagicMock(usage=mock_usage)
+    assert extract_api_usage(mock_completion) == {"prompt_tokens": 200, "completion_tokens": 80, "total_tokens": 280}
+
+
+def test_sanitize_messages():
+    messages = [
+        {"role": "user", "content": "Hi", "_api_usage": {"prompt_tokens": 10}},
+        {"role": "assistant", "content": "Hello", "api_usage": {"prompt_tokens": 10}},
+    ]
+    sanitized = _sanitize_messages(messages)
+    assert sanitized == [
+        {"role": "user", "content": "Hi"},
+        {"role": "assistant", "content": "Hello"},
+    ]
 
 
 def test_get_client_params_from_env_vars(monkeypatch):
@@ -102,7 +136,8 @@ def test_llm_client_complete_success(mock_openai, mock_token):
     mock_token.return_value = "fake-token"
     mock_message = MagicMock(content="Hello world", tool_calls=None)
     mock_choice = MagicMock(message=mock_message)
-    mock_completion = MagicMock(choices=[mock_choice])
+    mock_usage = MagicMock(prompt_tokens=100, completion_tokens=30, total_tokens=130)
+    mock_completion = MagicMock(choices=[mock_choice], usage=mock_usage)
 
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = mock_completion
@@ -112,6 +147,7 @@ def test_llm_client_complete_success(mock_openai, mock_token):
 
     res = client.complete([{"role": "user", "content": "Hi"}])
     assert res.content == "Hello world"
+    assert res._api_usage == {"prompt_tokens": 100, "completion_tokens": 30, "total_tokens": 130}
 
 
 @patch("time.sleep")
@@ -126,7 +162,8 @@ def test_llm_client_call_llm_structure(mock_openai, mock_token, mock_sleep):
 
     mock_message = MagicMock(content="Executing tool", tool_calls=[mock_tc])
     mock_choice = MagicMock(message=mock_message)
-    mock_completion = MagicMock(choices=[mock_choice])
+    mock_usage = MagicMock(prompt_tokens=150, completion_tokens=45, total_tokens=195)
+    mock_completion = MagicMock(choices=[mock_choice], usage=mock_usage)
 
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = mock_completion
@@ -141,3 +178,4 @@ def test_llm_client_call_llm_structure(mock_openai, mock_token, mock_sleep):
     assert len(res["tool_calls"]) == 1
     assert res["tool_calls"][0]["id"] == "call_123"
     assert res["tool_calls"][0]["function"]["name"] == "read_file"
+    assert res["_api_usage"] == {"prompt_tokens": 150, "completion_tokens": 45, "total_tokens": 195}

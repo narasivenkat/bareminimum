@@ -9,7 +9,7 @@ from tools.delete_file import delete_file
 from tools.file_search import file_search
 from tools.list_dir import list_dir
 from tools.read_file import read_file
-from tools.registry import ToolRegistry
+from tools.registry import ToolRegistry, TOOL_ALIASES
 from tools.write_file import write_file
 
 
@@ -241,6 +241,28 @@ def test_build_default_registry_includes_delete_file():
     assert "delete" in registry.names
     assert "unlink" in registry.names
     assert "file_search" in registry.names
+
+
+def test_schema_deduplication():
+    registry = build_default_registry()
+    schemas = registry.schemas()
+    assert schemas is not None
+    schema_names = [s["function"]["name"] for s in schemas]
+
+    # Primary tools should be present
+    assert "read_file" in schema_names
+    assert "write_file" in schema_names
+    assert "delete_file" in schema_names
+    assert "list_dir" in schema_names
+    assert "file_search" in schema_names
+
+    # Aliases should be omitted from schemas
+    for alias in TOOL_ALIASES:
+        assert alias not in schema_names
+
+    # But dispatch and names still support aliases
+    assert "create_file" in registry.names
+    assert "create_file" in registry
 
 
 def test_tool_registry():

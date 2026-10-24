@@ -29,6 +29,16 @@ from tools.tool_output_sanitizer import INJECTION_PATTERNS, sanitize_tool_output
 
 logger = get_logger(__name__)
 
+# Map alias names to primary tool names
+TOOL_ALIASES = {
+    "search_files": "file_search",
+    "glob_search": "file_search",
+    "remove_file": "delete_file",
+    "delete": "delete_file",
+    "unlink": "delete_file",
+    "create_file": "write_file",
+}
+
 
 @dataclass
 class ToolSpec:
@@ -85,10 +95,15 @@ class ToolRegistry:
         return list(self._tools.keys())
 
     def schemas(self) -> Optional[List[Dict[str, Any]]]:
-        """Return OpenAI-style tool schemas, or ``None`` when no tools exist."""
+        """Return unique OpenAI-style tool schemas, omitting redundant alias duplicates."""
         if not self._tools:
             return None
-        return [spec.to_openai_tool() for spec in self._tools.values()]
+        unique_schemas = [
+            spec.to_openai_tool()
+            for name, spec in self._tools.items()
+            if name not in TOOL_ALIASES
+        ]
+        return unique_schemas if unique_schemas else None
 
     def get(self, name: str) -> Optional[ToolSpec]:
         """Return the ToolSpec for a tool name, or None if not found."""
@@ -334,6 +349,7 @@ def _stringify(result: Any) -> str:
 __all__ = [
     "ToolSpec",
     "ToolRegistry",
+    "TOOL_ALIASES",
     "parse_tool_call",
     "parse_arguments",
     "format_tool_purpose",

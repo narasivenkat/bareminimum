@@ -23,6 +23,63 @@ from auth.oauth import retrieve_oauth_token
 logger = logging.getLogger(__name__)
 
 
+def _safe_int(val: Any) -> int:
+    """Safely convert a numeric value to an integer, returning 0 on failure."""
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        return int(val)
+    if isinstance(val, str) and val.isdigit():
+        return int(val)
+    return 0
+
+
+def extract_api_usage(completion: Any) -> dict[str, int]:
+    """
+    Extract token usage telemetry (prompt_tokens, completion_tokens, total_tokens)
+    safely from an LLM API completion response or dictionary.
+    """
+    if completion is None:
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    usage = getattr(completion, "usage", None)
+    if usage is None and isinstance(completion, dict):
+        usage = completion.get("usage")
+
+    if usage is None:
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    if isinstance(usage, dict):
+        prompt = _safe_int(usage.get("prompt_tokens"))
+        comp = _safe_int(usage.get("completion_tokens"))
+        total = _safe_int(usage.get("total_tokens"))
+    else:
+        prompt = _safe_int(getattr(usage, "prompt_tokens", None))
+        comp = _safe_int(getattr(usage, "completion_tokens", None))
+        total = _safe_int(getattr(usage, "total_tokens", None))
+
+    if total == 0:
+        total = prompt + comp
+
+    return {
+        "prompt_tokens": prompt,
+        "completion_tokens": comp,
+        "total_tokens": total,
+    }
+
+
+def _sanitize_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Sanitize messages list by stripping non-standard internal metadata fields.
+    """
+    sanitized = []
+    for msg in messages:
+        if isinstance(msg, dict):
+            clean_msg = {k: v for k, v in msg.items() if not k.startswith("_") and k != "api_usage"}
+            sanitized.append(clean_msg)
+        else:
+            sanitized.append(msg)
+    return sanitized
+
+
 def _get_client_params() -> dict[str, Any]:
     """Read generic, model-independent client settings from environment variables or config.yaml."""
     cfg = ConfigManager
@@ -162,7 +219,7 @@ def available_models() -> list[str]:
 
 class LLMClient:
     """
-    LLM Client adapter with built-in exponential backoff retries.
+    LLM Client adapter with built-in exponential backoff retries and telemetry extraction.
     """
 
     def complete(
@@ -178,7 +235,8 @@ class LLMClient:
         """
         Send a chat-completion request and return the raw assistant message object.
 
-        Handles OAuth authentication and exponential backoff retries.
+        Handles OAuth authentication and exponential backoff retries. Extracts API usage
+        telemetry and attaches it to the returned message object.
 
         Raises:
             RuntimeError: If authentication fails.
@@ -201,6 +259,8 @@ class LLMClient:
         backoff = client_params["initial_backoff"]
         last_exception: Exception | None = None
 
+        sanitized_messages = _sanitize_messages(messages)
+
         for attempt in range(1, max_retries + 1):
             try:
                 logger.debug(
@@ -208,13 +268,13 @@ class LLMClient:
                     attempt,
                     max_retries,
                     _model_name,
-                    len(messages),
+                    len(sanitized_messages),
                     len(tools) if tools else 0,
                 )
 
                 kwargs: dict[str, Any] = {
                     "model": _model_name,
-                    "messages": messages,
+                    "messages": sanitized_messages,
                     "max_tokens": _max_tokens,
                     "temperature": _temperature,
                     "top_p": model_params["top_p"],
@@ -225,7 +285,10 @@ class LLMClient:
                     kwargs["response_format"] = response_format
 
                 completion = client.chat.completions.create(**kwargs)
-                return completion.choices[0].message
+                message = completion.choices[0].message
+                usage = extract_api_usage(completion)
+                setattr(message, "_api_usage", usage)
+                return message
 
             except Exception as e:
                 last_exception = e
@@ -240,6 +303,30 @@ class LLMClient:
 
         raise last_exception  # type: ignore[misc]
 
+    def complete_with_usage(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        tools: Optional[list[dict]] = None,
+        response_format: Optional[dict] | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        model_name: str | None = None,
+    ) -> tuple[Any, dict[str, int]]:
+        """
+        Send a chat-completion request and return a tuple of (message, api_usage_dict).
+        """
+        message = self.complete(
+            messages,
+            tools=tools,
+            response_format=response_format,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            model_name=model_name,
+        )
+        usage = getattr(message, "_api_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
+        return message, usage
+
     def call_llm(
         self,
         messages: list[dict[str, Any]],
@@ -250,7 +337,8 @@ class LLMClient:
         model_name: str | None = None,
     ) -> dict[str, Any]:
         """
-        Send a chat-completion request and return a full OpenAI-style assistant dict.
+        Send a chat-completion request and return a full OpenAI-style assistant dict
+        including extracted API usage telemetry.
         """
         message = self.complete(
             messages,
@@ -275,6 +363,11 @@ class LLMClient:
                 }
                 for tc in tool_calls
             ]
+
+        api_usage = getattr(message, "_api_usage", None)
+        if api_usage:
+            assistant["_api_usage"] = api_usage
+            assistant["api_usage"] = api_usage
 
         logger.debug(
             "[LLM] Response received (%d chars, %d tool call(s))",

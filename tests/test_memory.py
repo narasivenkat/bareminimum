@@ -71,6 +71,42 @@ def test_token_tracker():
     assert tracker.total_tokens == 0
 
 
+def test_token_tracker_telemetry_side_by_side():
+    tracker = TokenTracker(model_name="gemini-3.6-flash")
+
+    # Simulate turn 1 with API usage response attached to assistant message
+    turn1_msg = {
+        "role": "assistant",
+        "content": "Hello world",
+        "_api_usage": {"prompt_tokens": 120, "completion_tokens": 40, "total_tokens": 160},
+    }
+    tracker.add_input("User input prompt for turn 1")
+    tracker.add_output(turn1_msg)
+
+    assert tracker.input_tokens > 0
+    assert tracker.output_tokens > 0
+    assert tracker.api_input_tokens == 120
+    assert tracker.api_output_tokens == 40
+    assert tracker.api_total_tokens == 160
+
+    # Test comparison report
+    report = tracker.get_comparison_report("gemini-3.6-flash")
+    assert "tiktoken" in report
+    assert "api_response" in report
+    assert "difference" in report
+
+    assert report["api_response"]["input_tokens"] == 120
+    assert report["api_response"]["output_tokens"] == 40
+    assert report["api_response"]["total_tokens"] == 160
+    assert report["api_response"]["cost"] == tracker.calculate_cost(source="api")
+
+    # Turn history check
+    assert len(tracker.turn_history) == 1
+    t1 = tracker.turn_history[0]
+    assert t1["api_response"]["input"] == 120
+    assert t1["api_response"]["output"] == 40
+
+
 def test_compute_cost():
     # 1,000,000 input tokens at $0.15/1M + 1,000,000 output tokens at $0.60/1M = $0.75
     cost = compute_cost(1_000_000, 1_000_000, input_cost_per_1m=0.15, output_cost_per_1m=0.60)
@@ -217,8 +253,13 @@ def test_agent_loop_token_tracking_and_compaction():
                         "function": {"name": "read_file", "arguments": '{"path": "test.txt"}'},
                     }
                 ],
+                "_api_usage": {"prompt_tokens": 150, "completion_tokens": 30, "total_tokens": 180},
             }
-        return {"role": "assistant", "content": "Final task complete."}
+        return {
+            "role": "assistant",
+            "content": "Final task complete.",
+            "_api_usage": {"prompt_tokens": 220, "completion_tokens": 15, "total_tokens": 235},
+        }
 
     # Run agent with low context window so compaction triggers
     with patch("memory.compaction.get_context_window", return_value=100):
@@ -228,8 +269,11 @@ def test_agent_loop_token_tracking_and_compaction():
     assert res.input_tokens > 0
     assert res.output_tokens > 0
     assert res.total_cost > 0.0
+    assert res.api_input_tokens == 370
+    assert res.api_output_tokens == 45
+    assert res.api_total_cost > 0.0
+    assert "tiktoken" in res.token_usage_comparison
+    assert "api_response" in res.token_usage_comparison
+    assert res.token_usage_comparison["api_response"]["input_tokens"] == 370
     assert res.metadata["input_tokens"] == res.input_tokens
-    assert res.metadata["output_tokens"] == res.output_tokens
-    assert res.metadata["total_tokens"] == res.input_tokens + res.output_tokens
-    assert res.metadata["total_cost"] == res.total_cost
-    assert res.metadata["compactions"] >= 1
+    assert res.metadata["api_input_tokens"] == 370

@@ -21,7 +21,7 @@ MEMORY:
   # Total context window (tokens) of the target model.
   CONTEXT_WINDOW: 128000
   # Trigger compaction once usage exceeds this percentage of the window.
-  THRESHOLD_PCT: 70
+  THRESHOLD_PCT: 50
   # Number of most-recent messages always kept verbatim (never summarised).
   KEEP_RECENT: 6
   # tiktoken encoding used for counting (cl100k_base ~ GPT-4/4o family).

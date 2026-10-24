@@ -26,8 +26,8 @@ A tool call inside an assistant message::
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import time
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from config.config import ConfigManager
@@ -100,6 +100,10 @@ class AgentResult:
     input_tokens: int = 0
     output_tokens: int = 0
     total_cost: float = 0.0
+    api_input_tokens: int = 0
+    api_output_tokens: int = 0
+    api_total_cost: float = 0.0
+    token_usage_comparison: Dict[str, Any] = field(default_factory=dict)
     elapsed_time: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -112,6 +116,44 @@ def resolve_max_turns(max_turns: Optional[int]) -> int:
         logger.warning("Invalid MAX_TURNS %r; falling back to %d.", max_turns, _FALLBACK_MAX_TURNS)
         return _FALLBACK_MAX_TURNS
     return int(max_turns)
+
+
+def prune_historical_tool_outputs(
+    conversation: List[Dict[str, Any]],
+    keep_recent_turns: int = 2,
+    content_threshold: int = 300,
+) -> List[Dict[str, Any]]:
+    """
+    Replace large tool output bodies in older turns with lightweight placeholders.
+    Preserves recent turns verbatim so the model has full working context.
+
+    Args:
+        conversation: List of message dictionaries in the conversation.
+        keep_recent_turns: Number of recent turns to preserve un-pruned.
+        content_threshold: Minimum character length of tool content to trigger pruning.
+
+    Returns:
+        A new list of messages with historical large tool outputs replaced with placeholders.
+    """
+    pruned = []
+    total_msgs = len(conversation)
+    # Threshold index before which tool outputs are candidates for pruning
+    cutoff_idx = max(0, total_msgs - (keep_recent_turns * 3))
+
+    for idx, msg in enumerate(conversation):
+        if idx < cutoff_idx and msg.get("role") == "tool":
+            content = msg.get("content") or ""
+            if isinstance(content, str) and len(content) > content_threshold:
+                tool_name = msg.get("name") or "tool"
+                msg_copy = dict(msg)
+                msg_copy["content"] = (
+                    f"[Tool '{tool_name}' output consumed in prior turn; content truncated to save tokens]"
+                )
+                pruned.append(msg_copy)
+                continue
+        pruned.append(msg)
+
+    return pruned
 
 
 def run_agent(
@@ -166,10 +208,13 @@ def run_agent(
     turns = 0
     last_content = ""
     compaction_count = 0
-    token_tracker = TokenTracker()
+    token_tracker = TokenTracker(model_name=model_name)
 
     while turns < limit:
         turns += 1
+
+        # Prune historical tool outputs from older turns to save tokens
+        conversation = prune_historical_tool_outputs(conversation)
 
         # Check and compact context memory if tokens exceed threshold
         if should_compact(conversation, model_name=model_name):
@@ -197,8 +242,25 @@ def run_agent(
         logger.info("Agent turn %d/%d: %s", turns, limit, _describe_action(assistant, tool_calls, registry))
         if not tool_calls:
             logger.debug("Agent finished with a final answer on turn %d.", turns)
-            total_cost = token_tracker.calculate_cost(model_name=model_name)
+            total_cost = token_tracker.calculate_cost(model_name=model_name, source="tiktoken")
+            api_cost = token_tracker.calculate_cost(model_name=model_name, source="api")
+            comparison_report = token_tracker.get_comparison_report(model_name=model_name)
             elapsed_time = time.perf_counter() - start_time
+
+            metadata = {
+                "compactions": compaction_count,
+                "input_tokens": token_tracker.input_tokens,
+                "output_tokens": token_tracker.output_tokens,
+                "total_tokens": token_tracker.total_tokens,
+                "total_cost": total_cost,
+                "api_input_tokens": token_tracker.api_input_tokens,
+                "api_output_tokens": token_tracker.api_output_tokens,
+                "api_total_tokens": token_tracker.api_total_tokens,
+                "api_total_cost": api_cost,
+                "token_usage_comparison": comparison_report,
+                "elapsed_time": elapsed_time,
+            }
+
             return AgentResult(
                 final_text=assistant.get("content") or "",
                 messages=conversation,
@@ -208,15 +270,12 @@ def run_agent(
                 input_tokens=token_tracker.input_tokens,
                 output_tokens=token_tracker.output_tokens,
                 total_cost=total_cost,
+                api_input_tokens=token_tracker.api_input_tokens,
+                api_output_tokens=token_tracker.api_output_tokens,
+                api_total_cost=api_cost,
+                token_usage_comparison=comparison_report,
                 elapsed_time=elapsed_time,
-                metadata={
-                    "compactions": compaction_count,
-                    "input_tokens": token_tracker.input_tokens,
-                    "output_tokens": token_tracker.output_tokens,
-                    "total_tokens": token_tracker.total_tokens,
-                    "total_cost": total_cost,
-                    "elapsed_time": elapsed_time,
-                },
+                metadata=metadata,
             )
 
         read_calls = []
@@ -265,8 +324,25 @@ def run_agent(
     except Exception as exc:  # noqa: BLE001 - fall back to last known content
         logger.warning("Forced final answer failed: %s", exc)
 
-    total_cost = token_tracker.calculate_cost(model_name=model_name)
+    total_cost = token_tracker.calculate_cost(model_name=model_name, source="tiktoken")
+    api_cost = token_tracker.calculate_cost(model_name=model_name, source="api")
+    comparison_report = token_tracker.get_comparison_report(model_name=model_name)
     elapsed_time = time.perf_counter() - start_time
+
+    metadata = {
+        "compactions": compaction_count,
+        "input_tokens": token_tracker.input_tokens,
+        "output_tokens": token_tracker.output_tokens,
+        "total_tokens": token_tracker.total_tokens,
+        "total_cost": total_cost,
+        "api_input_tokens": token_tracker.api_input_tokens,
+        "api_output_tokens": token_tracker.api_output_tokens,
+        "api_total_tokens": token_tracker.api_total_tokens,
+        "api_total_cost": api_cost,
+        "token_usage_comparison": comparison_report,
+        "elapsed_time": elapsed_time,
+    }
+
     return AgentResult(
         final_text=final_text,
         messages=conversation,
@@ -276,15 +352,12 @@ def run_agent(
         input_tokens=token_tracker.input_tokens,
         output_tokens=token_tracker.output_tokens,
         total_cost=total_cost,
+        api_input_tokens=token_tracker.api_input_tokens,
+        api_output_tokens=token_tracker.api_output_tokens,
+        api_total_cost=api_cost,
+        token_usage_comparison=comparison_report,
         elapsed_time=elapsed_time,
-        metadata={
-            "compactions": compaction_count,
-            "input_tokens": token_tracker.input_tokens,
-            "output_tokens": token_tracker.output_tokens,
-            "total_tokens": token_tracker.total_tokens,
-            "total_cost": total_cost,
-            "elapsed_time": elapsed_time,
-        },
+        metadata=metadata,
     )
 
 
