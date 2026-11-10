@@ -37,6 +37,9 @@ TOOL_ALIASES = {
     "delete": "delete_file",
     "unlink": "delete_file",
     "create_file": "write_file",
+    "graph_search": "graph_retrieve",
+    "graph_retriever": "graph_retrieve",
+    "retrieve_from_graph": "graph_retrieve",
 }
 
 
@@ -238,6 +241,12 @@ def format_tool_purpose(name: str, args: Dict[str, Any], description: str = "") 
         if query:
             return f"Searching codebase for '{query}'"
         return "Searching codebase"
+
+    if name in ("graph_retrieve", "graph_search", "graph_retriever", "retrieve_from_graph"):
+        req = args.get("request") or args.get("query") or args.get("cypher_query") or query
+        if req:
+            return f"Retrieving from graph database for '{req}'"
+        return "Retrieving from knowledge graph database"
 
     if name in ("run_terminal", "run_command"):
         if command:

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BareMinimum Multi-Session Support Analysis & Architectural Guide</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-code: #090d16;
+            --border-color: #334155;
+            --border-glow: #38bdf840;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #f472b6;
+            --accent-yellow: #facc15;
+            --accent-red: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 310px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.6rem;
+        }
+
+        .sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
+            display: block;
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .sidebar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green) !important;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 0.75rem !important;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 6px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 310px;
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1200px;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .tag.alert {
+            color: var(--accent-orange);
+            border-color: rgba(251, 146, 60, 0.4);
+            background-color: rgba(251, 146, 60, 0.1);
+        }
+
+        .tag.success {
+            color: var(--accent-green);
+            border-color: rgba(74, 222, 128, 0.4);
+            background-color: rgba(74, 222, 128, 0.1);
+        }
+
+        section {
+            margin-bottom: 3.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.25rem;
+            background-color: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            color: var(--accent-blue);
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        p {
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        ul, ol {
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        code {
+            font-family: "Fira Code", Monaco, Consolas, monospace;
+            background-color: var(--bg-code);
+            color: var(--accent-cyan);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        pre {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .callout {
+            background-color: var(--bg-card);
+            border-left: 4px solid var(--accent-blue);
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .callout.warning {
+            border-left-color: var(--accent-orange);
+            background-color: rgba(251, 146, 60, 0.08);
+        }
+
+        .callout.success {
+            border-left-color: var(--accent-green);
+            background-color: rgba(74, 222, 128, 0.08);
+        }
+
+        .callout h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            color: var(--accent-blue);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .mini-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .mini-card h4 {
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <a href="index.html" class="sidebar-back">&larr; Documentation Hub</a>
+        <h2>Navigation</h2>
+        <ul>
+            <li><a href="#summary">Executive Summary</a></li>
+            <li><a href="#current-state">1. Current Capabilities Analysis</a></li>
+            <li><a href="#architectural-gap">2. Architectural Gap & Bottlenecks</a></li>
+            <li><a href="#target-architecture">3. Target Multi-Session Architecture</a></li>
+            <li><a href="#step-by-step">4. Step-by-Step Implementation Blueprint</a></li>
+            <li><a href="#code-spec">5. Concrete Code Implementation Specs</a></li>
+            <li><a href="#cli-api-integration">6. Multi-Session CLI & API Integration</a></li>
+            <li><a href="#security-concurrency">7. Security, Sandboxing & Concurrency</a></li>
+            <li><a href="#roadmap">8. Adoption Roadmap & Conclusion</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>BareMinimum Multi-Session Support Analysis & Architectural Guide</h1>
+            <div class="header-meta">
+                <span class="tag alert">Current State: Single Session / Single Task</span>
+                <span class="tag success">Target State: Production Multi-Session Engine</span>
+                <span class="tag">Architecture & Design</span>
+            </div>
+        </header>
+
+        <section id="summary">
+            <h2>Executive Summary</h2>
+            <p>
+                This document answers two fundamental engineering questions regarding the <strong>BareMinimum Agentic Coding Harness</strong>:
+            </p>
+            <ol>
+                <li><strong>Can BareMinimum currently handle a single session or multiple sessions?</strong></li>
+                <li><strong>How can BareMinimum be refactored and scaled to support multiple concurrent and persistent sessions?</strong></li>
+            </ol>
+            <div class="callout warning">
+                <h4>Core Finding: Current Capability Is Single Session (Task-Bounded REPL)</h4>
+                <p>
+                    In its current architecture, <strong>BareMinimum only supports a single interactive session per process execution</strong>. 
+                    Conversation history is held strictly in ephemeral memory during a single agent task run (<code>run_agent()</code> in <code>loop/loop.py</code>). 
+                    There is no session identification, session storage engine, multi-tenant directory isolation, or concurrent thread safety mechanism.
+                </p>
+            </div>
+            <p>
+                To enable <strong>multi-session capability</strong> (supporting multiple user conversations simultaneously, restoring past sessions, and isolating workspaces), 
+                BareMinimum requires four core architectural additions:
+            </p>
+            <ul>
+                <li><strong>Session Context Model & Identifier:</strong> Explicit <code>session_id</code> and <code>user_id</code> bindings for state scoping.</li>
+                <li><strong>Persistent Session Store:</strong> Disk/Database serialization (e.g. SQLite or JSON files in <code>.bareminimum/sessions/</code>) for turn-by-turn history.</li>
+                <li><strong>Thread-Safe Session Manager:</strong> An async session lifecycle manager handling session creation, switching, concurrency locks, and resource cleanup.</li>
+                <li><strong>Workspace Sandboxing & Multi-Tenant Isolation:</strong> Virtualized relative path resolution and workspace locking per session.</li>
+            </ul>
+        </section>
+
+        <section id="current-state">
+            <h2>1. Current Capabilities Analysis</h2>
+            <p>
+                A comprehensive review of the current BareMinimum codebase reveals the exact scope and boundaries of its session handling:
+            </p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Module / File</th>
+                        <th>Current Implementation</th>
+                        <th>Session Scope</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>run.py</code></td>
+                        <td>CLI entrypoint with interactive <code>while True</code> loop and single active model context (<code>active_model</code>).</td>
+                        <td>Single process lifecycle; commands run in series for one operator.</td>
+                    </tr>
+                    <tr>
+                        <td><code>loop/loop.py</code></td>
+                        <td><code>run_agent()</code> builds a local <code>messages = []</code> list that lasts only for the duration of a single user prompt loop.</td>
+                        <td>Task-bound / Ephemeral. Cleared on each task completion or script exit.</td>
+                    </tr>
+                    <tr>
+                        <td><code>orchestrator/orchestrator.py</code></td>
+                        <td>AutoGen orchestrator spawns sub-agents to process parallel read tasks and serialized write tasks for a single turn.</td>
+                        <td>Single-request thread pool without session routing.</td>
+                    </tr>
+                    <tr>
+                        <td><code>memory/compaction.py</code></td>
+                        <td><code>MemoryCompactor</code> compacts the local <code>messages</code> list when context threshold is exceeded.</td>
+                        <td>Operates only on in-memory lists within a single task run.</td>
+                    </tr>
+                    <tr>
+                        <td><code>config/config.py</code></td>
+                        <td>Loads workspace root from environment variable (<code>HARNESS_WORKSPACE</code>) or process current working directory (<code>os.getcwd()</code>).</td>
+                        <td>Process-global single workspace root.</td>
+                    </tr>
+                    <tr>
+                        <td><code>graph/dbconn.py</code></td>
+                        <td>Singleton/shared Neo4j connection pool executing cypher queries globally across the code graph.</td>
+                        <td>Global graph access; lacks tenant/session namespace tags.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Why Current BareMinimum Is Single Session</h3>
+            <p>
+                When a user executes <code>python run.py</code>, the system enters a single CLI input loop. 
+                Each user entry invokes <code>run_agent(prompt, model, tools)</code>. 
+                Inside <code>run_agent</code>:
+            </p>
+            <pre><code># Inside loop/loop.py (Current implementation)
+def run_agent(user_prompt: str, model: Any, tools: ToolRegistry, ...):
+    messages: List[Dict[str, Any]] = []  # <--- Fresh list created every run!
+    messages.append({"role": "user", "content": user_prompt})
+    
+    # Executed until completion...
+    return AgentResult(...)</code></pre>
+            <p>
+                Because <code>messages</code> is created anew on each prompt invocation (or stored only in memory during a single CLI session without persistent indexing or multi-user keying):
+            </p>
+            <ul>
+                <li><strong>No Session Persistence:</strong> Context is lost once the process exits or when switching tasks.</li>
+                <li><strong>No Concurrent Session Support:</strong> Two simultaneous requests will collide on process resources, workspace writes, and global state variable <code>active_model</code>.</li>
+                <li><strong>No Multi-Tenancy:</strong> File operations operate directly on a single shared workspace root without user or session boundaries.</li>
+            </ul>
+        </section>
+
+        <section id="architectural-gap">
+            <h2>2. Architectural Gap & Bottlenecks</h2>
+            <p>
+                To transition BareMinimum from a single-session CLI tool into a multi-session enterprise agent framework, four main technical gaps must be addressed:
+            </p>
+            
+            <div class="card-grid">
+                <div class="mini-card">
+                    <h4>1. State Coupling Gap</h4>
+                    <p>Global variables (<code>active_model</code>, process cwd) prevent multiple sessions from running with different model configs or in different working directories simultaneously.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>2. Storage & Memory Gap</h4>
+                    <p>No storage adapter exists to load, save, or compact session state to disk or database (SQLite/JSONL) across process restarts or client disconnects.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>3. Workspace Conflict Gap</h4>
+                    <p>Parallel session file operations will trigger race conditions and file corruption without a per-session write lock manager or per-session workspace sandboxes.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>4. Routing & Transport Gap</h4>
+                    <p>Current interface is limited to stdin/stdout CLI. Multi-session requires asynchronous transport (REST API / WebSockets) with session headers or CLI session switching commands.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="target-architecture">
+            <h2>3. Target Multi-Session Architecture</h2>
+            <p>
+                The target architecture decouples state, session management, and workspace execution from the CLI process lifecycle.
+            </p>
+
+            <pre><code>+-----------------------------------------------------------------------------------+
+|                                 CLIENT INTERFACES                                 |
+|   +--------------------------+    +--------------------+    +------------------+  |
+|   |  Multi-Session CLI REPL  |    |  REST API Gateway  |    | WebSockets Server|  |
+|   | (/session switch <id>)   |    | (POST /v1/chat)    |    | (ws://.../stream)|  |
+|   +------------+-------------+    +---------+----------+    +--------+---------+  |
++----------------|------------------------|----------------------------|------------+
+                 |                        |                            |
+                 +-------------------+    |    +-----------------------+
+                                     v    v    v
++-----------------------------------------------------------------------------------+
+|                               SESSION MANAGER LAYER                               |
+|  +-----------------------------------------------------------------------------+  |
+|  |                           SessionManager Engine                             |  |
+|  |  - Session Lifecycle (Create, Resume, Pause, Delete)                        |  |
+|  |  - Active Sessions Registry Map: Dict[str, SessionContext]                  |  |
+|  |  - Async Execution Pool & Request Router                                   |  |
+|  +--------------------------------------+--------------------------------------+  |
++-----------------------------------------|-----------------------------------------+
+                                          |
+                +-------------------------+-------------------------+
+                v                                                   v
++-------------------------------+                 +---------------------------------+
+|    PERSISTENT SESSION STORE   |                 |    PER-SESSION EXECUTION ENGINE  |
+| +---------------------------+ |                 | +-----------------------------+ |
+| | FileSessionStore (.json)  | |                 | | Session Context Isolation   | |
+| | OR SQLite / Redis Backend | |                 | | - Session ID: "sess_9821"   | |
+| +---------------------------+ |                 | | - Isolated Message History  | |
+| | - Schema: SessionID,      | |                 | | - Isolated Memory Compactor | |
+| |   Messages, Metadata,     | |                 | | - Session Model Config      | |
+| |   Token Accounting        | |                 | +--------------+--------------+ |
+| +---------------------------+ |                 +----------------|----------------+
++-------------------------------+                                  |
+                                                                   v
++-----------------------------------------------------------------------------------+
+|                                WORKSPACE & TOOL LAYER                             |
+|  +----------------------------------+    +-------------------------------------+  |
+|  |  Multi-Tenant Sandboxed WS       |    | Per-Session File Mutex & Lock       |  |
+|  |  (/workspaces/{session_id}/)     |    | (Prevents file write race conds)    |  |
+|  +----------------------------------+    +-------------------------------------+  |
++-----------------------------------------------------------------------------------+</code></pre>
+        </section>
+
+        <section id="step-by-step">
+            <h2>4. Step-by-Step Implementation Blueprint</h2>
+            <p>
+                To make BareMinimum handle multiple sessions cleanly without breaking existing single-turn behavior, implement the following steps:
+            </p>
+
+            <h3>Step 1: Define the Core Session Data Structure</h3>
+            <p>
+                Create a <code>Session</code> class encapsulating conversation history, token telemetry, user settings, and execution locks:
+            </p>
+            <ul>
+                <li><code>session_id</code> (str): Unique UUID or slug identifier (e.g. <code>sess_20250330_a9f1</code>).</li>
+                <li><code>user_id</code> (str): Tenant or user identifier for auth and quota isolation.</li>
+                <li><code>model_name</code> (str): Model configured for this specific session (e.g., <code>gpt-4o</code>, <code>claude-3-5-sonnet</code>).</li>
+                <li><code>messages</code> (List[Dict]): Historical message list for multi-turn conversations.</li>
+                <li><code>workspace_path</code> (Path): Directory scope reserved for this session.</li>
+                <li><code>token_usage</code> (Dict): Session-accumulated token count and financial cost.</li>
+                <li><code>lock</code> (asyncio.Lock): Prevents concurrent turn execution within the same session ID.</li>
+            </ul>
+
+            <h3>Step 2: Build a Session Persistence Layer (<code>SessionStore</code>)</h3>
+            <p>
+                Implement a store that saves and retrieves session states to/from disk (or a relational database).
+                Store session data in JSON/JSONL format under <code>.bareminimum/sessions/{session_id}.json</code>.
+            </p>
+
+            <h3>Step 3: Refactor Control Loop to Accept Session Context</h3>
+            <p>
+                Refactor <code>run_agent()</code> in <code>loop/loop.py</code> into a session-aware function <code>run_agent_session()</code> that takes a <code>Session</code> object, appends new user inputs to the session history, runs compaction on that session's history, and persists state after completion.
+            </p>
+
+            <h3>Step 4: Create a Central <code>SessionManager</code></h3>
+            <p>
+                Implement a singleton/manager class that maintains in-memory active sessions, loads dormant sessions from storage, handles timeout eviction, and provides thread-safe operations.
+            </p>
+
+            <h3>Step 5: Provide Multi-Session Interfaces (CLI & REST/WebSocket API)</h3>
+            <p>
+                Extend the CLI with <code>/session</code> subcommands (create, list, switch, delete) and add a FastAPI server endpoint allowing multi-tenant HTTP/WebSocket clients to pass a <code>X-Session-ID</code> header.
+            </p>
+        </section>
+
+        <section id="code-spec">
+            <h2>5. Concrete Code Implementation Specs</h2>
+            <p>
+                Below is the complete architectural implementation code ready for inclusion into BareMinimum:
+            </p>
+
+            <h3>A. Session Store Module (<code>session/store.py</code>)</h3>
+            <pre><code>import json
+import os
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field, asdict
+import time
+
+@dataclass
+class SessionState:
+    session_id: str
+    user_id: str = "default_user"
+    model_name: str = "gpt-4o"
+    workspace_path: str = "."
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+    messages: List[Dict[str, Any]] = field(default_factory=list)
+    total_tokens: int = 0
+    total_cost: float = 0.0
+    metadata: Dict[str, Any]] = field(default_factory=dict)
+
+class SessionStore:
+    """Persistent storage engine for BareMinimum sessions."""
+    
+    def __init__(self, storage_dir: str = ".bareminimum/sessions"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_path(self, session_id: str) -> Path:
+        return self.storage_dir / f"{session_id}.json"
+
+    def save_session(self, session: SessionState) -> None:
+        """Persist session state to JSON file."""
+        session.updated_at = time.time()
+        file_path = self._get_path(session.session_id)
+        temp_path = file_path.with_suffix(".tmp")
+        
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump(asdict(session), f, indent=2, ensure_ascii=False)
+        temp_path.replace(file_path)
+
+    def load_session(self, session_id: str) -> Optional[SessionState]:
+        """Load session state from JSON file."""
+        file_path = self._get_path(session_id)
+        if not file_path.exists():
+            return None
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return SessionState(**data)
+
+    def list_sessions(() -> List[Dict[str, Any]]:
+        """List summary of all persisted sessions."""
+        sessions = []
+        for p in self.storage_dir.glob("*.json"):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    sessions.append({
+                        "session_id": data.get("session_id"),
+                        "user_id": data.get("user_id"),
+                        "model_name": data.get("model_name"),
+                        "updated_at": data.get("updated_at"),
+                        "message_count": len(data.get("messages", [])),
+                    })
+            except Exception:
+                continue
+        return sorted(sessions, key=lambda s: s.get("updated_at", 0), reverse=True)
+
+    def delete_session(self, session_id: str) -> bool:
+        """Delete session persistence file."""
+        file_path = self._get_path(session_id)
+        if file_path.exists():
+            file_path.unlink()
+            return True
+        return False</code></pre>
+
+            <h3>B. Session Manager Engine (<code>session/manager.py</code>)</h3>
+            <pre><code>import asyncio
+import uuid
+from typing import Dict, Optional, List
+from session.store import SessionStore, SessionState
+from memory.compaction import MemoryCompactor
+
+class SessionManager:
+    """Thread-safe manager controlling concurrent session lifecycles."""
+
+    def __init__(self, store: Optional[SessionStore] = None):
+        self.store = store or SessionStore()
+        self._active_sessions: Dict[str, SessionState] = {}
+        self._locks: Dict[str, asyncio.Lock] = {}
+        self._global_lock = asyncio.Lock()
+
+    async def get_or_create_session(
+        self, 
+        session_id: Optional[str] = None, 
+        user_id: str = "default_user",
+        model_name: str = "gpt-4o",
+        workspace_path: str = "."
+    ) -> SessionState:
+        """Retrieve existing session or instantiate a new one."""
+        async with self._global_lock:
+            if not session_id:
+                session_id = f"sess_{uuid.uuid4().hex[:8]}"
+
+            if session_id in self._active_sessions:
+                return self._active_sessions[session_id]
+
+            # Try loading from persistence
+            loaded = self.store.load_session(session_id)
+            if loaded:
+                self._active_sessions[session_id] = loaded
+                if session_id not in self._locks:
+                    self._locks[session_id] = asyncio.Lock()
+                return loaded
+
+            # Create new session
+            new_session = SessionState(
+                session_id=session_id,
+                user_id=user_id,
+                model_name=model_name,
+                workspace_path=workspace_path
+            )
+            self.store.save_session(new_session)
+            self._active_sessions[session_id] = new_session
+            self._locks[session_id] = asyncio.Lock()
+            return new_session
+
+    def get_lock(self, session_id: str) -> asyncio.Lock:
+        """Get per-session asyncio Lock for sequential turn execution."""
+        if session_id not in self._locks:
+            self._locks[session_id] = asyncio.Lock()
+        return self._locks[session_id]
+
+    async def save_session_state(self, session: SessionState) -> None:
+        """Persist session updates to disk."""
+        self.store.save_session(session)
+
+    async def list_all_sessions(self) -> List[Dict[str, Any]]:
+        """List active and saved sessions."""
+        return self.store.list_sessions()</code></pre>
+
+            <h3>C. Refactored Session-Aware Agent Loop (<code>loop/loop.py</code>)</h3>
+            <pre><code># Refactored agent turn execution accepting SessionState context
+async def run_agent_session_turn(
+    session: SessionState,
+    user_input: str,
+    tools: ToolRegistry,
+    manager: SessionManager,
+    compactor: Optional[MemoryCompactor] = None
+) -> AgentResult:
+    """Execute a single multi-turn interaction for a specific session."""
+    session_lock = manager.get_lock(session.session_id)
+    
+    async with session_lock:
+        # 1. Append new user prompt to session history
+        session.messages.append({"role": "user", "content": user_input})
+        
+        # 2. Compact history if token budget exceeded
+        if compactor:
+            session.messages = compactor.compact(session.messages)
+            
+        # 3. Instantiate model with session's designated model config
+        model = make_llm_model(session.model_name)
+        
+        # 4. Execute standard loop pass over accumulated session.messages
+        result = await execute_loop_pass(
+            messages=session.messages,
+            model=model,
+            tools=tools,
+            workspace_root=session.workspace_path
+        )
+        
+        # 5. Append assistant result & telemetry to session
+        session.messages.append({"role": "assistant", "content": result.final_text})
+        session.total_tokens += (result.input_tokens + result.output_tokens)
+        session.total_cost += result.total_cost
+        
+        # 6. Save updated session state to disk
+        await manager.save_session_state(session)
+        
+        return result</code></pre>
+        </section>
+
+        <section id="cli-api-integration">
+            <h2>6. Multi-Session CLI & API Integration</h2>
+            
+            <h3>A. Interactive Multi-Session CLI Integration</h3>
+            <p>
+                In <code>run.py</code>, session control commands allow operators to switch, inspect, and branch sessions interactively:
+            </p>
+            <pre><code># Enhanced CLI Command Router in run.py
+current_session_id = "sess_default"
+
+while True:
+    user_input = input(f"\n[{current_session_id}] Task? ").strip()
+    
+    if user_input.startswith("/session"):
+        parts = user_input.split()
+        cmd = parts[1] if len(parts) > 1 else "list"
+        
+        if cmd == "list":
+            sessions = session_manager.list_all_sessions()
+            for s in sessions:
+                mark = "*" if s['session_id'] == current_session_id else " "
+                print(f" {mark} {s['session_id']} | User: {s['user_id']} | Model: {s['model_name']} | Messages: {s['message_count']}")
+                
+        elif cmd == "switch" and len(parts) > 2:
+            current_session_id = parts[2]
+            print(f"Switched active session to: {current_session_id}")
+            
+        elif cmd == "new":
+            new_sess = session_manager.create_session()
+            current_session_id = new_sess.session_id
+            print(f"Created and switched to new session: {current_session_id}")
+            
+        continue</code></pre>
+
+            <h3>B. Fast-API Multi-Session Gateway Endpoint</h3>
+            <p>
+                To serve HTTP and WebSocket clients concurrently across multiple independent sessions:
+            </p>
+            <pre><code>from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI(title="BareMinimum Multi-Session API Gateway")
+manager = SessionManager()
+
+class ChatRequest(BaseModel):
+    prompt: str
+    model: Optional[str] = "gpt-4o"
+
+@app.post("/v1/chat")
+async def chat_endpoint(
+    req: ChatRequest,
+    x_session_id: Optional[str] = Header(None),
+    x_user_id: Optional[str] = Header("default_user")
+):
+    # Retrieve or create session by ID
+    session = await manager.get_or_create_session(
+        session_id=x_session_id,
+        user_id=x_user_id,
+        model_name=req.model
+    )
+    
+    # Execute session turn in non-blocking async pool
+    result = await run_agent_session_turn(
+        session=session,
+        user_input=req.prompt,
+        tools=registry,
+        manager=manager
+    )
+    
+    return {
+        "session_id": session.session_id,
+        "response": result.final_text,
+        "tokens": {
+            "input": result.input_tokens,
+            "output": result.output_tokens,
+            "session_total": session.total_tokens
+        },
+        "cost": result.total_cost
+    }</code></pre>
+        </section>
+
+        <section id="security-concurrency">
+            <h2>7. Security, Sandboxing & Concurrency</h2>
+            <p>
+                When enabling multiple concurrent sessions, security and workspace boundary enforcement become critical:
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Multi-Session Challenge</th>
+                        <th>Architectural Risk</th>
+                        <th>BareMinimum Solution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Workspace Collision</strong></td>
+                        <td>Two sessions writing to the same file simultaneously could corrupt code or overwrite user changes.</td>
+                        <td><strong>Workspace Sandboxing:</strong> Assign each session a dedicated subdirectory (e.g., <code>/workspaces/{session_id}/</code>) or virtual path sandbox.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cross-Session Data Leakage</strong></td>
+                        <td>Session A retrieving conversation memory or tool outputs belonging to Session B.</td>
+                        <td><strong>Strict Context Isolation:</strong> Session state objects are isolated by UUID keys and passed explicitly down the call stack.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Graph RAG Tenant Mixing</strong></td>
+                        <td>Cypher graph searches returning AST nodes across multi-tenant boundaries.</td>
+                        <td><strong>Tenant-Tagged Graph Queries:</strong> Append <code>WHERE n.tenant_id = $tenant_id</code> to Cypher queries in <code>graph/dbconn.py</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resource Starvation / Spikes</strong></td>
+                        <td>One session issuing high-frequency tool calls and starving CPU or LLM rate limits.</td>
+                        <td><strong>Per-Session Rate Limiter:</strong> Token bucket and circuit breaker configured per <code>session_id</code>.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="roadmap">
+            <h2>8. Adoption Roadmap & Conclusion</h2>
+            <p>
+                BareMinimum can be seamlessly upgraded from a single-session engine into a robust multi-session platform in 4 incremental phases:
+            </p>
+            
+            <div class="card-grid">
+                <div class="mini-card">
+                    <h4>Phase 1: Core Session Model & Persistence</h4>
+                    <p>Implement <code>SessionState</code> and <code>SessionStore</code>. Add JSON persistence under <code>.bareminimum/sessions/</code>.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>Phase 2: Refactor Agent Loop</h4>
+                    <p>Update <code>loop/loop.py</code> to accept session context and maintain multi-turn history across runs.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>Phase 3: CLI Session Commands</h4>
+                    <p>Add <code>/session list</code>, <code>/session switch</code>, <code>/session new</code> to <code>run.py</code>.</p>
+                </div>
+                <div class="mini-card">
+                    <h4>Phase 4: API Gateway & Sandboxing</h4>
+                    <p>Expose FastAPI REST/WebSocket endpoints and enforce per-session workspace sandboxing.</p>
+                </div>
+            </div>
+
+            <div class="callout success">
+                <h4>Conclusion</h4>
+                <p>
+                    <strong>Currently, BareMinimum operates as a single-session CLI agent.</strong> 
+                    However, by introducing the <code>SessionManager</code>, file-based persistence, per-session locking, and workspace sandboxing detailed in this guide, BareMinimum can easily be upgraded into a production-ready, multi-tenant agent harness capable of handling arbitrary concurrent client sessions.
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; BareMinimum Harness Architecture Documentation • Multi-Session Architecture Guide</p>
+        </footer>
+    </main>
+</body>
+</html>

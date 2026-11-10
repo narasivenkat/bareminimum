@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BareMinimum Harness Architecture & Engineering Guide</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-code: #090d16;
+            --border-color: #334155;
+            --border-glow: #38bdf840;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #f472b6;
+            --accent-yellow: #facc15;
+            --accent-red: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 310px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.6rem;
+        }
+
+        .sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
+            display: block;
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .sidebar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green) !important;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 0.75rem !important;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 6px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 310px;
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1200px;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        header p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 850px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+        }
+
+        .badge.green { color: var(--accent-green); border-color: rgba(74, 222, 128, 0.3); }
+        .badge.purple { color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.3); }
+        .badge.orange { color: var(--accent-orange); border-color: rgba(251, 146, 60, 0.3); }
+        .badge.pink { color: var(--accent-pink); border-color: rgba(244, 114, 182, 0.3); }
+
+        section {
+            margin-bottom: 3.5rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+            margin: 1.75rem 0 0.85rem 0;
+        }
+
+        h4 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        ul, ol {
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.4rem;
+        }
+
+        /* Cards and Grid Layouts */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .card h4 {
+            color: var(--accent-blue);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .card p {
+            font-size: 0.88rem;
+            margin-bottom: 0;
+            color: var(--text-secondary);
+        }
+
+        /* Diagrams & Visual Blocks */
+        .diagram-container {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+
+        /* Code Syntax Formatting */
+        pre {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #f1f5f9;
+        }
+
+        code {
+            font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--accent-cyan);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            border-left: 4px solid var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.08);
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .callout.warning {
+            border-left-color: var(--accent-orange);
+            background-color: rgba(251, 146, 60, 0.08);
+        }
+
+        .callout.security {
+            border-left-color: var(--accent-red);
+            background-color: rgba(248, 113, 113, 0.08);
+        }
+
+        .callout.success {
+            border-left-color: var(--accent-green);
+            background-color: rgba(74, 222, 128, 0.08);
+        }
+
+        .callout-title {
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <a href="index.html" class="sidebar-back">← Architecture Hub</a>
+        <h2>BareMinimum Guide</h2>
+        <ul>
+            <li><a href="#overview">1. Executive Overview</a></li>
+            <li><a href="#philosophy">2. Core Philosophy & Guiding Principles</a></li>
+            <li><a href="#architecture">3. High-Level System Architecture</a></li>
+            <li><a href="#control-loop">4. Control Loop Engine (`loop/`)</a></li>
+            <li><a href="#config-launchers">5. Configuration & Launchers (`config/`, `runmin`)</a></li>
+            <li><a href="#tool-system">6. Tool Subsystem & Workspace Boundary (`tools/`)</a></li>
+            <li><a href="#security-hitl">7. Security, Prompt Injection & HITL</a></li>
+            <li><a href="#orchestrator">8. AutoGen Sub-Agent Orchestrator (`orchestrator/`)</a></li>
+            <li><a href="#memory-compaction">9. Memory Management & Token Compaction (`memory/`)</a></li>
+            <li><a href="#llm-auth">10. LLM Engine, Resilience & OAuth 2.0 (`llm/`, `auth/`)</a></li>
+            <li><a href="#graph-rag">11. Graph RAG Codebase Intelligence (`graph/`)</a></li>
+            <li><a href="#operations">12. Configuration & Operational Cheat Sheet</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header>
+            <h1>BareMinimum Harness Architecture & Engineering Guide</h1>
+            <p>Comprehensive technical specification and architectural manual for the BareMinimum Agentic Coding Harness—a high-performance, workspace-bounded AI coding agent engine designed for precision, velocity, and enterprise governance.</p>
+            <div class="header-meta">
+                <span class="badge">Architecture Spec v2.4</span>
+                <span class="badge green">Workspace Bounded</span>
+                <span class="badge purple">Token Compacted</span>
+                <span class="badge orange">Parallel Orchestrator</span>
+                <span class="badge pink">Graph RAG Enabled</span>
+            </div>
+        </header>
+
+        <!-- Section 1: Executive Overview -->
+        <section id="overview">
+            <h2>1. Executive Overview</h2>
+            <p>The <strong>BareMinimum Agentic Coding Harness</strong> is a lightweight, ultra-focused runtime designed to execute complex software engineering tasks. Built to overcome the bloating, high latency, and security vulnerabilities of traditional agent frameworks, BareMinimum enforces strict boundaries, determinism, and minimal token waste.</p>
+            <p>Unlike monolithic agent frameworks that load bloated prompts and unconstrained toolsets, BareMinimum operates with a targeted, workspace-isolated tool registry, dynamic history compaction, multi-provider LLM failover, and Human-in-the-Loop (HITL) safeguards.</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h4>Minimal Token Surface</h4>
+                    <p>Enforces target-first single-file reading, sliding-window history compaction, and XML tool payload encapsulation to keep prompt usage within optimal token windows.</p>
+                </div>
+                <div class="card">
+                    <h4>Workspace Isolation</h4>
+                    <p>All file system mutations (reads, writes, deletes, listing, searches) are strictly confined to the project workspace root with path sanitization and directory traversal blocking.</p>
+                </div>
+                <div class="card">
+                    <h4>Human-in-the-Loop (HITL)</h4>
+                    <p>Mutating operations (`write_file`, `delete_file`) generate interactive unified diff previews with explicit confirmation gates (`y/N`) and dry-run preview capabilities.</p>
+                </div>
+                <div class="card">
+                    <h4>Hybrid Multi-Agent Parallelism</h4>
+                    <p>Integrates AutoGen Explorer agents to dispatch read operations in parallel while serializing write operations behind async mutex locks for zero code corruption.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Core Philosophy -->
+        <section id="philosophy">
+            <h2>2. Core Philosophy & Guiding Principles</h2>
+            <p>BareMinimum was architected around four core design tenets:</p>
+            <ol>
+                <li><strong>Laser-Sharp Context Efficiency:</strong> Do not flood the LLM prompt with entire source trees. Request exact line bounded windows, utilize file search wildcards, and compact old turn histories before token limits trigger performance degradation.</li>
+                <li><strong>Fail-Safe Workspace Confinement:</strong> The agent cannot escape the designated workspace directory. Paths containing directory traversal syntax (e.g., <code>../..</code>) or external absolute paths are rejected.</li>
+                <li><strong>Transparent Governance & Auditability:</strong> Every tool execution, prompt injection check, token calculation, and model invocation is logged with microsecond accuracy to structured JSON logs.</li>
+                <li><strong>Model-Agnostic Model Interoperability:</strong> Seamlessly switch between Gemini 3.6 Flash, Claude Opus 4.8, DeepSeek V4.1 Flash, and GLM 5.3 Flash without altering business logic or tool schemas.</li>
+            </ol>
+        </section>
+
+        <!-- Section 3: High-Level System Architecture -->
+        <section id="architecture">
+            <h2>3. High-Level System Architecture</h2>
+            <p>The system is organized into modular subsystems with clean interfaces:</p>
+
+            <div class="diagram-container">
++-------------------------------------------------------------------------------------------------+
+|                                     BAREMINIMUM ENGINE CLI / REPL                               |
+|                  (run.py / runmin / runmin.sh / Interactive Slash Commands)                     |
++-------------------------------------------------------------------------------------------------+
+                                                |
+                                                v
++-------------------------------------------------------------------------------------------------+
+|                                 CORE AGENT LOOP (loop/loop.py)                                 |
+|   - Turn Counter Enforcement (MAX_TURNS)       - Execution State Accounting                     |
+|   - Multi-Turn History Management               - Compaction & Pruning Triggers                  |
++-------------------------------------------------------------------------------------------------+
+                       |                                                   |
+                       v                                                   v
++-------------------------------------------+       +---------------------------------------------+
+|        LLM CLIENT (llm/llm_client.py)     |       |       MEMORY COMPACTION (memory/)           |
+|  - Gemini / Claude / DeepSeek / GLM       |       |  - tiktoken (cl100k_base) Token Counter     |
+|  - Exponential Backoff & Jitter Retry     |       |  - 70% Context Window Sliding Compactor     |
+|  - OAuth 2.0 Token Bearer (auth/oauth.py) |       |  - Preservation of Prompt System Context    |
++-------------------------------------------+       +---------------------------------------------+
+                       |
+                       v
++-------------------------------------------------------------------------------------------------+
+|                               TOOL REGISTRY ENGINE (tools/registry.py)                          |
+|  - Tool Definition & OpenAI Function Rendering   - Alias Map Resolution                        |
++-------------------------------------------------------------------------------------------------+
+          |                                       |                                    |
+          v                                       v                                    v
++-------------------+                   +-------------------+                +--------------------+
+| READ OPERATIONS   |                   | MUTATION GATE     |                | CODEBASE GRAPH RAG |
+| (Parallel Dispatch|                   | (HITL Gate & Lock)|                | (Neo4j AST / Calls)|
+| read_file,        |                   | - Unified Diff    |                | - ast_generator.py |
+| file_search,      |                   | - Confirmation y/N|                | - call_graph.py    |
+| list_dir)         |                   | - Async Write Lock|                | - retrieve.py      |
++-------------------+                   +-------------------+                +--------------------+
+          |                                       |                                    |
+          +-------------------+-------------------+------------------------------------+
+                              |
+                              v
++-------------------------------------------------------------------------------------------------+
+|                              TOOL OUTPUT SANITIZER & SAFETY GATE                                |
+|   - XML Tag Isolation (<untrusted_file_content path="...">)                                     |
+|   - Injection Keyword Pattern Scanner & Safety Warning Injection                                 |
++-------------------------------------------------------------------------------------------------+
+                              |
+                              v
++-------------------------------------------------------------------------------------------------+
+|                                   PROJECT DISK WORKSPACE                                        |
++-------------------------------------------------------------------------------------------------+
+            </div>
+        </section>
+
+        <!-- Section 4: Control Loop Engine -->
+        <section id="control-loop">
+            <h2>4. Control Loop Engine (`loop/loop.py`)</h2>
+            <p>The control loop is the core driver of the agent runtime. It implements an iterative evaluate-and-execute state machine:</p>
+            <ul>
+                <li><strong>Loop Initiation:</strong> Accepts system instructions, initial user prompts, tool registries, and configuration overrides.</li>
+                <li><strong>Iterative Cycle:</strong>
+                    <ol>
+                        <li>Calculates total current context tokens using <code>memory.token_counter</code>.</li>
+                        <li>Triggers <code>memory.compaction.compact_history()</code> if total prompt tokens exceed the configured threshold (e.g., 70% of model window).</li>
+                        <li>Dispatches prompt and tool specifications to <code>llm/llm_client.py</code>.</li>
+                        <li>Parses assistant response: if text only, returns final result; if tool call requested, routes to <code>ToolRegistry.dispatch()</code>.</li>
+                        <li>Sanitizes tool output via <code>sanitize_tool_output()</code> and appends result as a <code>tool</code> message in turn history.</li>
+                        <li>Checks maximum turn limit (<code>AGENT.MAX_TURNS</code>, default: 30 turns).</li>
+                    </ol>
+                </li>
+            </ul>
+
+            <div class="callout">
+                <div class="callout-title">💡 Performance Metric Tracking (`AgentResult`)</div>
+                <p>Every execution loop returns an <code>AgentResult</code> object encapsulating total prompt tokens, total completion tokens, wall-clock latency, total turns taken, and tool invocation count for full operational visibility.</p>
+            </div>
+
+            <pre><code># Architectural snippet of the Core Loop Dispatch
+class AgentLoop:
+    def run(self, user_prompt: str) -> AgentResult:
+        self.history.append({"role": "user", "content": user_prompt})
+        
+        for turn in range(self.max_turns):
+            # Token limit & compaction check
+            if self.should_compact():
+                self.history = compact_history(self.history, max_tokens=self.context_threshold)
+            
+            response = self.llm_client.completion(messages=self.history, tools=self.registry.get_schemas())
+            
+            if not response.has_tool_calls():
+                return AgentResult(status="SUCCESS", output=response.content, turns=turn + 1)
+                
+            for tool_call in response.tool_calls:
+                result = self.registry.dispatch(tool_call)
+                sanitized_result = sanitize_tool_output(result.content, path=result.path)
+                self.history.append({"role": "tool", "tool_call_id": tool_call.id, "content": sanitized_result})
+                
+        raise MaxTurnsExceededException("Agent failed to settle within turn budget.")</code></pre>
+        </section>
+
+        <!-- Section 5: Configuration & Launchers -->
+        <section id="config-launchers">
+            <h2>5. Configuration & Launchers (`config/`, `runmin`)</h2>
+            <p>BareMinimum features a unified configuration manager and cross-platform bootstrapping wrapper:</p>
+
+            <h3>ConfigManager (`config/config.py`)</h3>
+            <p>Centralizes configuration settings using hierarchical resolution:</p>
+            <ol>
+                <li>Environment Variables (e.g. <code>BAREMINIMUM_DIR</code>, <code>HARNESS_WORKSPACE</code>, <code>DEFAULT_MODEL</code>).</li>
+                <li>Local YAML File (<code>resources/config.yaml</code>).</li>
+                <li>Hardcoded Safety Defaults.</li>
+            </ol>
+
+            <h3>CLI Bootstrapping & Launchers</h3>
+            <ul>
+                <li><code>runmin.sh</code> / <code>runmin.bat</code>: Environment bootsrapping shell scripts that automatically locate Python 3.10+, create/activate local <code>.venv</code>, install dependencies, export workspace paths, and execute <code>run.py</code>.</li>
+                <li><code>run.py</code>: Entry point supporting single CLI prompt execution or interactive REPL. Includes built-in slash commands:
+                    <ul>
+                        <li><code>/bash &lt;command&gt;</code>: Direct shell execution within workspace context.</li>
+                        <li><code>/model [model_name]</code>: Hot-switch current model provider at runtime.</li>
+                        <li><code>/orchestrator</code>: Toggle parallel sub-agent multi-processing.</li>
+                        <li><code>/clear</code>: Reset current conversation history.</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Section 6: Tool Subsystem & Workspace Boundaries -->
+        <section id="tool-system">
+            <h2>6. Tool Subsystem & Workspace Boundaries (`tools/`)</h2>
+            <p>Tools in BareMinimum are declared with OpenAI-compatible function calling schemas and registered in <code>tools/registry.py</code>. The registry handles tool resolution, alias mapping, parameter validation, and execution error wrapping.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tool Name</th>
+                        <th>Aliases</th>
+                        <th>Access Mode</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>read_file</code></td>
+                        <td>—</td>
+                        <td><span class="badge green">Read-Only</span></td>
+                        <td>Reads file content with optional 1-based line ranges (<code>start_line</code>, <code>end_line</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><code>write_file</code></td>
+                        <td><code>create_file</code></td>
+                        <td><span class="badge orange">Mutating / HITL</span></td>
+                        <td>Creates or updates file content. Generates diff preview & triggers HITL confirmation.</td>
+                    </tr>
+                    <tr>
+                        <td><code>delete_file</code></td>
+                        <td><code>remove_file</code>, <code>unlink</code>, <code>delete</code></td>
+                        <td><span class="badge orange">Mutating / HITL</span></td>
+                        <td>Deletes specified file or recursive directory with user approval.</td>
+                    </tr>
+                    <tr>
+                        <td><code>list_dir</code></td>
+                        <td>—</td>
+                        <td><span class="badge green">Read-Only</span></td>
+                        <td>Lists directory contents. Appends <code>/</code> for subdirectories.</td>
+                    </tr>
+                    <tr>
+                        <td><code>file_search</code></td>
+                        <td><code>search_files</code>, <code>glob_search</code></td>
+                        <td><span class="badge green">Read-Only</span></td>
+                        <td>Matches files matching glob/wildcard patterns (e.g., <code>*.py</code>, <code>**/*.json</code>).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout warning">
+                <div class="callout-title">🔒 Workspace Sandboxing Guarantee</div>
+                <p>Every file path provided by an incoming tool call is resolved against <code>HARNESS_WORKSPACE</code> via <code>os.path.abspath</code>. If the resulting path falls outside the root directory, execution is immediately blocked with a <code>PermissionError</code>.</p>
+            </div>
+        </section>
+
+        <!-- Section 7: Security, Prompt Injection & HITL -->
+        <section id="security-hitl">
+            <h2>7. Security, Prompt Injection & HITL Safeguards</h2>
+            <p>Security in BareMinimum is multi-tiered, protecting both the developer's filesystem and the LLM's prompt integrity.</p>
+
+            <h3>1. Tool Output Sanitizer (`tools/tool_output_sanitizer.py`)</h3>
+            <p>Files read from disk may contain untrusted text or malicious prompt injection instructions designed to override system instructions (e.g. <code>"ignore all previous instructions"</code>). The sanitizer protects the system by:</p>
+            <ul>
+                <li>Encapsulating file content inside strict XML tags: <code>&lt;untrusted_file_content path="..."&gt;</code>.</li>
+                <li>Escaping internal closing tags so content cannot break out of its XML boundaries.</li>
+                <li>Scanning content against regular expressions for prompt injection patterns. When detected, prepends a <code>[SECURITY WARNING: Possible prompt injection detected]</code> banner.</li>
+            </ul>
+
+            <h3>2. Human-in-the-Loop (HITL) Gate & Diff Engine</h3>
+            <p>To prevent unintended modifications, all file modification requests undergo preview and approval:</p>
+            <ul>
+                <li><strong>Unified Diff Preview:</strong> Computes standard <code>difflib.unified_diff</code> comparing disk content vs target content.</li>
+                <li><strong>Interactive Approval Prompt:</strong> Displays colored diff output in terminal and requests approval (<code>Proceed with write? [y/N]</code>).</li>
+                <li><strong>Dry-Run Mode:</strong> Supports <code>dry_run=True</code> tool flag to generate diffs without writing to disk.</li>
+                <li><strong>Async Mutex Locking:</strong> Mutating operations acquire <code>_write_lock</code> to prevent concurrent sub-agent file collisions.</li>
+            </ul>
+        </section>
+
+        <!-- Section 8: AutoGen Sub-Agent Orchestrator -->
+        <section id="orchestrator">
+            <h2>8. AutoGen Sub-Agent Orchestrator (`orchestrator/`)</h2>
+            <p>For complex tasks requiring parallel code exploration across multiple directories, BareMinimum leverages Microsoft AutoGen in a specialized hybrid dispatch model:</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h4>Parallel Read Fan-Out</h4>
+                    <p>Read operations (<code>list_dir</code>, <code>read_file</code>, <code>file_search</code>) are assigned to AutoGen Explorer Sub-Agents and executed concurrently using <code>asyncio.gather</code> and <code>ThreadPoolExecutor</code>.</p>
+                </div>
+                <div class="card">
+                    <h4>Serialized Mutex Writes</h4>
+                    <p>All write and delete operations are routed to a single Writer Agent backed by an <code>asyncio.Lock()</code> write queue, ensuring strict linear order and atomic modifications.</p>
+                </div>
+            </div>
+
+            <pre><code># Orchestrator concurrency & mutex pattern (orchestrator/tools.py)
+_write_lock = asyncio.Lock()
+_read_semaphore = asyncio.Semaphore(10) # Max 10 parallel reads
+
+async def async_read_file(path: str, **kwargs):
+    async with _read_semaphore:
+        return await asyncio.to_thread(sync_read_file, path, **kwargs)
+
+async def async_write_file(path: str, content: str, **kwargs):
+    async with _write_lock:
+        return await asyncio.to_thread(sync_write_file, path, content, **kwargs)</code></pre>
+        </section>
+
+        <!-- Section 9: Memory Management & Token Compaction -->
+        <section id="memory-compaction">
+            <h2>9. Memory Management & Token Compaction (`memory/`)</h2>
+            <p>Long-running agent sessions naturally accumulate substantial turn history, leading to token exhaustion and elevated API costs. BareMinimum solves this through active context window management.</p>
+
+            <h3>Token Counting (`memory/token_counter.py`)</h3>
+            <p>Uses <code>tiktoken</code> with the <code>cl100k_base</code> encoding to calculate exact token consumption for incoming prompts, system definitions, tool schemas, and conversation histories.</p>
+
+            <h3>Sliding Window Compaction (`memory/compaction.py`)</h3>
+            <p>When current history tokens exceed the threshold percentage (default: <code>70%</code> of model window):</p>
+            <ol>
+                <li>Preserves System Instruction Prompt and initial user task objective.</li>
+                <li>Retains the most recent N turns (defined by <code>KEEP_RECENT=6</code>) to preserve current operational context.</li>
+                <li>Summarizes older intermediate tool exchanges into a single compact context summary message.</li>
+                <li>Prunes duplicate tool schemas and redundant file read outputs from history.</li>
+            </ol>
+        </section>
+
+        <!-- Section 10: LLM Engine, Resilience & OAuth 2.0 -->
+        <section id="llm-auth">
+            <h2>10. LLM Engine, Resilience & OAuth 2.0 (`llm/`, `auth/`)</h2>
+            
+            <h3>Multi-Provider LLM Abstraction (`llm/llm_client.py`)</h3>
+            <p>Provides a standardized interface for sending prompts and receiving tool call structures across leading model families:</p>
+            <ul>
+                <li>Gemini 3.6 Flash</li>
+                <li>Claude Opus 4.8</li>
+                <li>DeepSeek V4.1 Flash</li>
+                <li>GLM 5.3 Flash</li>
+            </ul>
+
+            <h3>Exponential Backoff & Resilience</h3>
+            <p>API network calls are wrapped in automated retry handlers with exponential backoff and randomized jitter to handle rate limits (429) or transient provider outages seamlessly.</p>
+
+            <h3>OAuth 2.0 Credentials Engine (`auth/oauth.py`)</h3>
+            <p>For enterprise authentication, BareMinimum integrates OAuth 2.0 Client Credentials Grant workflows:</p>
+            <ul>
+                <li>Retrieves Bearer tokens automatically from configured OAuth endpoints.</li>
+                <li>Caches tokens in thread-local storage with proactive buffer expiry refresh (e.g. refreshing 60s before token expiration).</li>
+                <li>Supports standard corporate proxy routing via <code>USE_PROXY</code> and <code>HTTP_PROXY_URL</code> settings.</li>
+            </ul>
+        </section>
+
+        <!-- Section 11: Graph RAG Codebase Intelligence -->
+        <section id="graph-rag">
+            <h2>11. Graph RAG Codebase Intelligence Subsystem (`graph/`)</h2>
+            <p>To enable multi-repository codebase understanding beyond raw text search, BareMinimum includes an integrated Graph RAG indexing and retrieval engine:</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h4>AST Generation (`ast_generator.py`)</h4>
+                    <p>Parses source code into Abstract Syntax Trees to extract classes, interfaces, method signatures, annotations, and import structures.</p>
+                </div>
+                <div class="card">
+                    <h4>Call Graph Building (`call_graph_generator.py`)</h4>
+                    <p>Maps caller-callee relationships across files and modules to trace function invocation hierarchies.</p>
+                </div>
+                <div class="card">
+                    <h4>Doc Linking (`doc_linker.py`)</h4>
+                    <p>Links markdown architecture docs and API specifications directly to source code elements in the graph.</p>
+                </div>
+                <div class="card">
+                    <h4>Neo4j Indexing & Retrieval (`neo4j_inserter.py`, `retrieve.py`)</h4>
+                    <p>Stores code relationships in Neo4j database, allowing the agent to query structural dependencies with >90% lower token footprint than reading raw files.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 12: Operations & Cheat Sheet -->
+        <section id="operations">
+            <h2>12. Configuration & Operational Cheat Sheet</h2>
+
+            <h3>Configuration YAML Reference (`resources/config.yaml`)</h3>
+            <pre><code>harness:
+  workspace: "."
+  max_turns: 30
+  temperature: 0.2
+  default_model: "gemini-3.6-flash"
+
+memory:
+  context_window: 128000
+  threshold_pct: 0.70
+  keep_recent: 6
+
+security:
+  hitl_enabled: true
+  sanitize_outputs: true
+  allowed_workspace_only: true
+
+auth:
+  use_oauth: false
+  use_proxy: false
+  http_proxy_url: ""</code></pre>
+
+            <h3>Command Line Quick Reference</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Command / Script</th>
+                        <th>Usage</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>./runmin.sh "task"</code></td>
+                        <td>CLI Execution</td>
+                        <td>Run a single prompt task through BareMinimum harness.</td>
+                    </tr>
+                    <tr>
+                        <td><code>python run.py</code></td>
+                        <td>Interactive REPL</td>
+                        <td>Launch interactive REPL session with slash command support.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/bash pytest</code></td>
+                        <td>REPL Command</td>
+                        <td>Execute shell commands directly inside REPL.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/model claude-opus-4.8</code></td>
+                        <td>REPL Command</td>
+                        <td>Switch LLM provider model dynamically.</td>
+                    </tr>
+                    <tr>
+                        <td><code>/orchestrator</code></td>
+                        <td>REPL Command</td>
+                        <td>Toggle AutoGen sub-agent multi-processing engine.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <p>BareMinimum Agentic Coding Harness Architecture Guide • Enterprise Documentation • Workspace Bound Engine</p>
+        </footer>
+    </main>
+
+</body>
+</html>

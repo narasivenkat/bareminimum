@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BareMinimum End-to-End Execution Flow Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-code: #090d16;
+            --border-color: #334155;
+            --border-glow: #38bdf840;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #f472b6;
+            --accent-yellow: #facc15;
+            --accent-red: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h2 {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.86rem;
+            transition: all 0.2s ease;
+            display: block;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .sidebar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green) !important;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 0.75rem !important;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 6px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 320px;
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1250px;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+        }
+
+        .badge-container {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.3); }
+        .badge-green { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); border: 1px solid rgba(74, 222, 128, 0.3); }
+        .badge-purple { background: rgba(192, 132, 252, 0.15); color: var(--accent-purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+        .badge-orange { background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); border: 1px solid rgba(251, 146, 60, 0.3); }
+
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h2 .section-num {
+            color: var(--accent-blue);
+            font-family: monospace;
+            font-size: 1.25rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--accent-cyan);
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Cards & Grids */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .card h4 {
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        /* Callout Box */
+        .callout {
+            background: rgba(30, 41, 59, 0.7);
+            border-left: 4px solid var(--accent-blue);
+            padding: 1.25rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .callout-warning { border-left-color: var(--accent-orange); background: rgba(251, 146, 60, 0.05); }
+        .callout-success { border-left-color: var(--accent-green); background: rgba(74, 222, 128, 0.05); }
+        .callout-purple { border-left-color: var(--accent-purple); background: rgba(192, 132, 252, 0.05); }
+
+        .callout h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .callout p {
+            margin-bottom: 0;
+            font-size: 0.93rem;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            font-family: "Fira Code", Consolas, Monaco, "Andale Mono", monospace;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: "Fira Code", Consolas, Monaco, "Andale Mono", monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            color: var(--accent-cyan);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Diagrams */
+        .diagram-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.75rem;
+            margin: 1.75rem 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+        .diagram-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Step Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin: 2rem 0;
+            border-left: 2px solid var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: calc(-2rem - 9px);
+            top: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--bg-primary);
+            border: 3px solid var(--accent-blue);
+        }
+
+        .timeline-item.active .timeline-marker {
+            background-color: var(--accent-blue);
+            box-shadow: 0 0 10px var(--accent-blue);
+        }
+
+        .timeline-content h4 {
+            font-size: 1.15rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-content p {
+            font-size: 0.93rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 0.9rem 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            color: var(--accent-blue);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Interactive Simulator Styling */
+        .simulator-box {
+            background: var(--bg-card);
+            border: 1px solid var(--accent-blue);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+        }
+
+        .sim-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .sim-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .sim-btn:hover, .sim-btn.active {
+            background: var(--accent-blue);
+            color: var(--bg-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .sim-display {
+            background: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            min-height: 180px;
+        }
+
+        .sim-title {
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sim-desc {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-bottom: 1rem;
+        }
+
+        .sim-code {
+            font-family: monospace;
+            color: var(--accent-cyan);
+            font-size: 0.85rem;
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        @media (max-width: 1024px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; position: relative; }
+            .main-content { margin-left: 0; padding: 2rem; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <a href="index.html" class="sidebar-back">← Back to Index</a>
+        <h2>BareMinimum Execution Flow</h2>
+        <ul>
+            <li><a href="#overview">1. Flow Overview & Key Principles</a></li>
+            <li><a href="#entrypoint">2. Entry Point & CLI Lifecycle</a></li>
+            <li><a href="#loop-architecture">3. Control Loop Core (`loop.py`)</a></li>
+            <li><a href="#narration">4. Narration Requirement Flow</a></li>
+            <li><a href="#governance-safety">5. Governance & Safety Interception</a></li>
+            <li><a href="#parallel-tools">6. Parallel Read & Write Dispatch</a></li>
+            <li><a href="#memory-compaction">7. Token Management & Compaction</a></li>
+            <li><a href="#orchestrator-flow">8. Multi-Agent Orchestration Flow</a></li>
+            <li><a href="#interactive-simulator">9. Interactive Flow Simulator</a></li>
+            <li><a href="#complete-sequence">10. Complete Sequence Diagram</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header>
+            <h1>BareMinimum End-to-End Execution Flow</h1>
+            <p>Comprehensive step-by-step architectural breakdown of control loop execution, narration constraints, tool orchestration, governance, memory compaction, and sub-agent dispatching in the BareMinimum harness.</p>
+            <div class="badge-container">
+                <span class="badge badge-blue">Control Loop v1.0</span>
+                <span class="badge badge-green">Parallel Reads</span>
+                <span class="badge badge-purple">AutoGen Multi-Agent</span>
+                <span class="badge badge-orange">Workspace Guarded</span>
+            </div>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <section id="overview">
+            <h2><span class="section-num">01.</span> Flow Overview & Key Principles</h2>
+            <p>The <strong>BareMinimum Agentic Coding Harness</strong> operates as a deterministic, state-aware execution engine. Unlike naive agent loops that naively append messages and perform unbounded tool executions, BareMinimum enforces a strict, governed state flow designed for high-performance software engineering tasks.</p>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h4>⚡ Parallelized Tooling</h4>
+                    <p>Read-only file system operations (<code>list_dir</code>, <code>read_file</code>, <code>file_search</code>, <code>graph_retrieve</code>) are dispatched concurrently via worker threads to eliminate network/I/O bottlenecks.</p>
+                </div>
+                <div class="card">
+                    <h4>💬 Mandatory Narration</h4>
+                    <p>Every tool execution must be preceded by a short plain-text narration sentence explaining the intent behind the call, guaranteeing transparent audit trails.</p>
+                </div>
+                <div class="card">
+                    <h4>🛡️ Governance Sandbox</h4>
+                    <p>File path traversal checks (<code>workspace_guard.py</code>) and tool output sanitization (<code>tool_output_sanitizer.py</code>) shield the workspace against escape and prompt injections.</p>
+                </div>
+            </div>
+
+            <div class="callout callout-purple">
+                <h4>Core Execution Pipeline Summary</h4>
+                <p>CLI Entry Flag Parsing & Configuration &rarr; LLM Client Initialization &rarr; Context Compaction Gatekeeper &rarr; Reasoning Generation &rarr; Plain-Text Narration Check &rarr; Tool Security Guard &rarr; Parallel Read / Mutex Write Execution &rarr; State Update & Token Accounting &rarr; Final Answer Synthesis.</p>
+            </div>
+        </section>
+
+        <!-- Section 2: Entry Point -->
+        <section id="entrypoint">
+            <h2><span class="section-num">02.</span> Entry Point & CLI Lifecycle</h2>
+            <p>Execution initiates through CLI wrappers (<code>runmin</code>, <code>runmin.sh</code>, <code>runmin.bat</code>) or directly via <code>python run.py</code>. The entry point sets up runtime parameters, environment secrets, and sub-system registries.</p>
+
+            <div class="diagram-container">
+                <div class="diagram-title">Initialization Sequence Flow</div>
+                <div class="mermaid">
+                graph TD
+                    A[CLI Invocation: runmin / run.py] --> B[Parse Flags: --mode, --prompt, --config]
+                    B --> C[Load Config & OAuth Credentials: config.py / oauth.py]
+                    C --> D[Initialize LLMClient & Token Tracker]
+                    D --> E[Register Workspace Tools & Security Guard]
+                    E --> F{Mode Selection}
+                    F -->|standalone| G[Instantiate BareMinimumLoop]
+                    F -->|orchestrator| H[Instantiate AutoGenOrchestratorSystem]
+                    F -->|graph| I[Build / Retrieve Knowledge Graph]
+                    G --> J[Invoke .run prompt]
+                    H --> J
+                    I --> J
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Configuration Bootstrapping</h4>
+                    <p>Reads environment variables, OAuth bearer tokens via <code>auth/oauth.py</code>, model selections, temperature (default <code>0.2</code>), and context compaction limits from <code>config/config.py</code>.</p>
+                </div>
+                <div class="card">
+                    <h4>Tool Registry Loading</h4>
+                    <p>Maps JSON schema declarations in <code>tools/registry.py</code> to Python implementation handlers (e.g. <code>read_file</code>, <code>write_file</code>, <code>delete_file</code>, <code>file_search</code>, <code>list_dir</code>, <code>graph_retrieve</code>).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Control Loop Core -->
+        <section id="loop-architecture">
+            <h2><span class="section-num">03.</span> Control Loop Core (`loop/loop.py`)</h2>
+            <p>The core execution heartbeat is governed by <code>BareMinimumLoop.run()</code> in <code>loop/loop.py</code>. It manages iteration bounds, token tracking, tool execution, and context retention.</p>
+
+            <div class="timeline">
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 1: System Prompt & Conversation Context Assembly</h4>
+                        <p>Constructs initial prompt payload including the mandatory system prompt (from <code>prompts/system_prompt.py</code>) which specifies narration rules, tool signatures, and security constraints, combined with the user's objective.</p>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 2: Context Window Compaction Assessment</h4>
+                        <p>Before calling the LLM, <code>compaction.py</code> inspects total token count using local <code>tiktoken</code> encoding. If usage exceeds the compaction trigger limit, sliding window truncation and mid-conversation summarization automatically compress early turns.</p>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 3: LLM Inference Request</h4>
+                        <p>Invokes <code>llm/llm_client.py</code> with full conversation context and function signatures. Dual-stream tracking registers both tiktoken local estimates and exact provider API usage metadata.</p>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 4: Tool Call & Narration Parsing</h4>
+                        <p>Extracts tool call proposals and assistant message text. Checks if the response contains valid tool calls or signals final task completion (lack of tool calls).</p>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 5: Governance Verification & Tool Dispatch</h4>
+                        <p>Routes read tools to parallel worker threads and write tools to sequential execution under path traversal inspection. Tool outputs are sanitized and appended to the context.</p>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Step 6: Completion / Next Turn Evaluation</h4>
+                        <p>If LLM returns a plain-text message without tool calls, the loop terminates and returns an <code>AgentResult</code> containing token totals, cost estimations, timing metadata, and final response.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Narration Requirement -->
+        <section id="narration">
+            <h2><span class="section-num">04.</span> Narration Requirement Flow</h2>
+            <p>To eliminate "blind tool calls" and ensure full auditability, BareMinimum enforces a system-level constraint: <strong>Every tool call must be accompanied by plain-text narration in the message content</strong>.</p>
+
+            <div class="callout callout-warning">
+                <h4>Narration Rule Spec</h4>
+                <p><em>"Whenever you call a tool, you MUST also write one short narration of plain text in the message content that narrates why you want to use the tool for (example: 'Reading loop.py to inspect the agent loop.'). Do not emit a tool call with empty narration."</em></p>
+            </div>
+
+            <div class="diagram-container">
+                <div class="diagram-title">Narration Validation State Machine</div>
+                <div class="mermaid">
+                stateDiagram-v2
+                    [*] --> ReceiveLLMResponse
+                    ReceiveLLMResponse --> CheckToolCalls : Are tool calls present?
+                    CheckToolCalls --> ValidateNarration : Yes
+                    CheckToolCalls --> ReturnFinalAnswer : No tool calls
+                    
+                    ValidateNarration --> HasNarrationText : Check content field
+                    HasNarrationText --> DispatchTools : Non-empty text present
+                    HasNarrationText --> RetryWarning : Content empty or whitespace
+                    
+                    RetryWarning --> DispatchTools : Fallback log warning + append prompt reminder
+                    DispatchTools --> UpdateHistory
+                    ReturnFinalAnswer --> [*]
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Governance & Safety -->
+        <section id="governance-safety">
+            <h2><span class="section-num">05.</span> Governance & Safety Interception</h2>
+            <p>Every tool request and file path passes through governance guards prior to execution on the physical system.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Security Component</th>
+                        <th>Target File</th>
+                        <th>Functionality & Policy Enforced</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>WorkspaceGuard</code></td>
+                        <td><code>governance/workspace_guard.py</code></td>
+                        <td>Resolves real canonical file paths using <code>os.path.realpath()</code> to ensure target files remain within workspace root. Blocks directory escape attacks (e.g. <code>../../etc/passwd</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><code>ToolOutputSanitizer</code></td>
+                        <td><code>tools/tool_output_sanitizer.py</code></td>
+                        <td>Inspects retrieved file contents and command outputs for indirect prompt injection vectors, hidden control characters, or malicious prompt hijacking directives.</td>
+                    </tr>
+                    <tr>
+                        <td><code>HITL Approver</code></td>
+                        <td><code>tools/registry.py</code></td>
+                        <td>Forces interactive confirmation and generates unified dry-run diff previews prior to executing file modifications or deletions (<code>write_file</code>, <code>delete_file</code>).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 6: Parallel Read & Write Dispatch -->
+        <section id="parallel-tools">
+            <h2><span class="section-num">06.</span> Parallel Read & Write Dispatch</h2>
+            <p>To maximize efficiency during codebase exploration, BareMinimum categorizes tools into <strong>Concurrent Read Operations</strong> and <strong>Mutex-Locked Write Operations</strong>.</p>
+
+            <div class="diagram-container">
+                <div class="diagram-title">Parallel Read vs Mutex Write Processing</div>
+                <div class="mermaid">
+                graph LR
+                    A[LLM Output: Tool Calls Batch] --> B{Classify Tools}
+                    B -->|Read Tools: read_file, list_dir, search, graph| C[ThreadPoolExecutor / Parallel Dispatch]
+                    B -->|Write Tools: write_file, delete_file| D[Sequential Mutex-Locked Dispatch]
+                    
+                    C --> E1[Thread 1: read_file loop.py]
+                    C --> E2[Thread 2: list_dir tools/]
+                    C --> E3[Thread 3: file_search *test*]
+                    
+                    E1 --> F[Sanitize Output]
+                    E2 --> F
+                    E3 --> F
+                    
+                    D --> G1[HITL Approval Check]
+                    G1 --> G2[Execute Single Write]
+                    G2 --> F
+                    
+                    F --> H[Merge Results in Original Order & Return]
+                </div>
+            </div>
+
+            <pre><code># Orchestration Snippet from loop/loop.py
+read_calls = [call for call in tool_calls if call.name in READ_TOOLS]
+if read_calls:
+    # Dispatches up to 10 concurrent threads for file reads & searches
+    read_results = orchestrate_read_tool_calls(read_calls, registry)
+    read_results_map = {read_indices[i]: read_results[i] for i in range(len(read_calls))}
+
+# Sequential dispatch for mutations
+for idx, call in enumerate(tool_calls):
+    if idx not in read_results_map:
+        conversation.append(registry.dispatch(call))</code></pre>
+        </section>
+
+        <!-- Section 7: Token Management & Compaction -->
+        <section id="memory-compaction">
+            <h2><span class="section-num">07.</span> Context Management & Compaction Lifecycle</h2>
+            <p>As interaction history grows, context token usage is continuously tracked via local <code>tiktoken</code> calculation alongside API response token headers.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Compaction Thresholds</h4>
+                    <p>When current context tokens reach 80% of model capacity (or explicit token limit), <code>memory/compaction.py</code> triggers automated context window compression.</p>
+                </div>
+                <div class="card">
+                    <h4>Context Preservation Hierarchy</h4>
+                    <p>1. System Prompt (Always Kept)<br>2. Original User Task (Always Kept)<br>3. Compressed Summary of Intermediate Turns<br>4. Recent Conversation Buffer (Kept Intact)</p>
+                </div>
+            </div>
+
+            <div class="diagram-container">
+                <div class="diagram-title">Memory Sliding Window & Compaction Flow</div>
+                <div class="mermaid">
+                graph TD
+                    A[Check Token Count] --> B{Exceeds Trigger Limit?}
+                    B -->|No| C[Proceed to LLM Request]
+                    B -->|Yes| D[Identify Middle Conversation Range]
+                    D --> E[Generate Concise Summary of Old Turns]
+                    E --> F[Replace Old Turns with Summary Message]
+                    F --> G[Re-evaluate Token Count]
+                    G --> C
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Multi-Agent Orchestration Flow -->
+        <section id="orchestrator-flow">
+            <h2><span class="section-num">08.</span> Multi-Agent Orchestration Flow</h2>
+            <p>In <code>--mode orchestrator</code>, BareMinimum leverages Microsoft AutoGen to delegate complex tasks across specialized sub-agents.</p>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h4>🤖 UserProxyAgent (Orchestrator)</h4>
+                    <p>Receives user request, breaks task down into sub-goals, coordinates sub-agents, and synthesizes final result.</p>
+                </div>
+                <div class="card">
+                    <h4>🔍 ExplorerSubAgent</h4>
+                    <p>Dedicated inspection agent equipped with asynchronous read tools (<code>async_read_file</code>, <code>async_list_dir</code>, <code>async_graph_retrieve</code>).</p>
+                </div>
+                <div class="card">
+                    <h4>✏️ WriterAgent</h4>
+                    <p>Dedicated code modification agent equipped with mutex-locked write tools (<code>async_write_file</code>, <code>async_delete_file</code>).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 9: Interactive Simulator -->
+        <section id="interactive-simulator">
+            <h2><span class="section-num">09.</span> Interactive Flow Simulator</h2>
+            <p>Click through the execution stages below to simulate how BareMinimum processes a user prompt in real-time:</p>
+
+            <div class="simulator-box">
+                <div class="sim-nav">
+                    <button class="sim-btn active" onclick="setSimStage(0)">1. CLI Prompt</button>
+                    <button class="sim-btn" onclick="setSimStage(1)">2. Compaction Check</button>
+                    <button class="sim-btn" onclick="setSimStage(2)">3. LLM Request & Narration</button>
+                    <button class="sim-btn" onclick="setSimStage(3)">4. Governance & Parallel Reads</button>
+                    <button class="sim-btn" onclick="setSimStage(4)">5. Output Synthesis</button>
+                </div>
+                <div class="sim-display" id="sim-display">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 10: Complete Sequence Diagram -->
+        <section id="complete-sequence">
+            <h2><span class="section-num">10.</span> Complete End-to-End Sequence Diagram</h2>
+            <p>The unified sequence diagram illustrating interactions between User, CLI Entry, Loop Engine, Security Guard, LLM API, Tool Registry, and Memory Compactor:</p>
+
+            <div class="diagram-container">
+                <div class="diagram-title">Unified BareMinimum System Sequence</div>
+                <div class="mermaid">
+                sequenceDiagram
+                    autonumber
+                    actor User
+                    participant CLI as run.py / CLI
+                    participant Loop as BareMinimumLoop
+                    participant Memory as ContextCompactor
+                    participant LLM as LLMClient (API)
+                    participant Guard as WorkspaceGuard
+                    participant Tools as ToolRegistry
+
+                    User->>CLI: Execute runmin --prompt "Fix bug in loop.py"
+                    CLI->>Loop: Initialize with tools, config, model
+                    Loop->>Memory: Check context token count
+                    alt Tokens Exceed Limit
+                        Memory->>Loop: Compact old conversation turns
+                    end
+                    Loop->>LLM: Send conversation payload + tool specs
+                    LLM-->>Loop: Return reasoning text + tool calls (e.g., read_file, file_search)
+                    Loop->>Loop: Verify short narration plain-text presence
+                    
+                    par Parallel Read Tool Execution
+                        Loop->>Guard: Validate path security (read_file loop.py)
+                        Guard-->>Loop: Path Allowed
+                        Loop->>Tools: Dispatch parallel read_file
+                        Tools-->>Loop: File Content Result
+                    and
+                        Loop->>Guard: Validate path security (file_search)
+                        Guard-->>Loop: Path Allowed
+                        Loop->>Tools: Dispatch parallel file_search
+                        Tools-->>Loop: Search Results
+                    end
+
+                    Loop->>LLM: Send combined tool results
+                    LLM-->>Loop: Return final text answer without tool calls
+                    Loop->>CLI: Return AgentResult (final text, token costs, elapsed time)
+                    CLI-->>User: Display final result & execution summary
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Initialize Mermaid Diagrams
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+
+        // Interactive Simulator Logic
+        const stages = [
+            {
+                title: "Stage 1: Command Line Launch & Config Bootstrapping",
+                desc: "User executes 'runmin --mode standalone --prompt Explain execution flow'. Flags are parsed, OAuth credentials retrieved, and ToolRegistry initialized.",
+                code: "$ python run.py --mode standalone --prompt 'Explain execution flow'\n[Config] Mode: standalone | Model: gpt-4o | Workspace: /workspace\n[Registry] Registered 6 system tools: [read_file, write_file, delete_file, list_dir, file_search, graph_retrieve]"
+            },
+            {
+                title: "Stage 2: Pre-Inference Compaction Assessment",
+                desc: "The ContextCompactor calculates token overhead using local tiktoken. Since usage is under threshold (1,240 / 128,000 tokens), context passes through unmodified.",
+                code: "[Compactor] Input tokens: 1,240 | Trigger threshold: 102,400\n[Compactor] Compaction not required. System prompt & user goal assembled."
+            },
+            {
+                title: "Stage 3: LLM Inference & Plain-Text Narration Check",
+                desc: "LLM receives conversation context and emits a response containing short narration alongside 2 tool calls (read_file & file_search).",
+                code: "Assistant Response:\nContent: 'Reading loop.py and searching tools directory to analyze control flow.'\nTool Calls:\n 1. read_file(path='loop/loop.py')\n 2. file_search(pattern='*registry*')"
+            },
+            {
+                title: "Stage 4: Governance Validation & Parallel Execution",
+                desc: "WorkspaceGuard verifies canonical paths stay within workspace boundary. Both read calls are dispatched concurrently in worker threads.",
+                code: "[Guard] Validation OK: 'loop/loop.py' -> /workspace/loop/loop.py\n[Orchestrator] Executing 2 read tool calls in parallel across ThreadPoolExecutor...\n[Tools] Executed read_file and file_search in 18ms."
+            },
+            {
+                title: "Stage 5: Final Synthesis & Agent Result Generation",
+                desc: "Tool outputs are fed back to LLM. Model determines task is complete and generates plain-text final answer without tool calls.",
+                code: "Assistant Final Answer:\n'The execution flow of BareMinimum consists of CLI initialization, token compaction checking, parallel tool execution, governance checks, and final output synthesis.'\n[Loop] Stop reason: STOP_FINAL_ANSWER | Total Cost: $0.0024 | Elapsed: 1.42s"
+            }
+        ];
+
+        function setSimStage(idx) {
+            const btns = document.querySelectorAll('.sim-btn');
+            btns.forEach((b, i) => {
+                if(i === idx) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+
+            const disp = document.getElementById('sim-display');
+            const s = stages[idx];
+            disp.innerHTML = `
+                <div class="sim-title">${s.title}</div>
+                <div class="sim-desc">${s.desc}</div>
+                <div class="sim-code">${s.code.replace(/\n/g, '<br>')}</div>
+            `;
+        }
+
+        // Initialize stage 0 on load
+        setSimStage(0);
+    </script>
+</body>
+</html>

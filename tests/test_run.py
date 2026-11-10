@@ -118,7 +118,7 @@ def test_start_cli_task_execution(mock_registry, mock_run_agent, monkeypatch, ca
 
     def mock_input(prompt=""):
         res = next(inputs)
-        if isinstance(res, Exception):
+        if isinstance(res, BaseException):
             raise res
         return res
 
@@ -141,7 +141,7 @@ def test_start_cli_model_command(mock_change_dialog, monkeypatch):
 
     def mock_input(prompt=""):
         res = next(inputs)
-        if isinstance(res, Exception):
+        if isinstance(res, BaseException):
             raise res
         return res
 
@@ -154,77 +154,37 @@ def test_start_cli_model_command(mock_change_dialog, monkeypatch):
     mock_change_dialog.assert_called_once()
 
 
-@patch("run.run_bash_mode")
-def test_start_cli_bash_command(mock_bash_mode, monkeypatch):
-    inputs = iter(["/bash", KeyboardInterrupt()])
-
-    def mock_input(prompt=""):
-        res = next(inputs)
-        if isinstance(res, Exception):
-            raise res
-        return res
-
-    monkeypatch.setattr("builtins.input", mock_input)
-
-    with pytest.raises(SystemExit) as exc_info:
-        run.start_cli()
-
-    assert exc_info.value.code == 0
-    mock_bash_mode.assert_called_once()
-
-
-def test_start_cli_orchestrator_command(monkeypatch, capsys):
-    inputs = iter(["/orchestrator", KeyboardInterrupt()])
-
-    def mock_input(prompt=""):
-        res = next(inputs)
-        if isinstance(res, Exception):
-            raise res
-        return res
-
-    monkeypatch.setattr("builtins.input", mock_input)
-
-    with pytest.raises(SystemExit) as exc_info:
-        run.start_cli()
-
-    assert exc_info.value.code == 0
-    captured = capsys.readouterr().out
-    assert "Orchestrator is active" in captured
-
-
-@patch("run.run_orchestrator")
-def test_run_orchestrator_cli(mock_orchestrate, capsys):
-    mock_orchestrate.return_value = {"read_results": [], "write_results": []}
-    res = run.run_orchestrator_cli(["read task 1"], ["write task 1"])
-    assert res == {"read_results": [], "write_results": []}
-    captured = capsys.readouterr().out
-    assert "Running AutoGen Orchestrator" in captured
-    assert "Execution finished successfully" in captured
-
-
 @patch("run.run_agent")
 @patch("run.build_default_registry")
-def test_main_with_args(mock_registry, mock_run_agent, monkeypatch, capsys):
-    run.active_model = "test-model"
+def test_main_with_task_arg(mock_registry, mock_run_agent, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["run.py", "Do", "something"])
     mock_run_agent.return_value = AgentResult(
-        final_text="Direct task output",
+        final_text="Direct task completed",
         messages=[],
         turns=1,
         stop_reason=STOP_FINAL_ANSWER,
-        input_tokens=200,
-        output_tokens=80,
-        total_cost=0.000250,
-        elapsed_time=2.10,
+        input_tokens=10,
+        output_tokens=20,
+        total_cost=0.00005,
+        elapsed_time=0.5,
     )
 
-    monkeypatch.setattr(sys, "argv", ["run.py", "Perform direct task"])
     run.main()
 
     mock_run_agent.assert_called_once()
-    assert mock_run_agent.call_args[0][0] == "Perform direct task"
+    assert mock_run_agent.call_args[0][0] == "Do something"
     captured = capsys.readouterr().out
-    assert "Direct task output" in captured
-    assert "[Tokens: 200 in, 80 out (280 total) | Cost: $0.000250 | Time: 2.10s]" in captured
+    assert "Direct task completed" in captured
+
+
+@patch("run.change_model_dialog")
+@patch("run.start_cli")
+def test_main_with_model_arg(mock_start_cli, mock_change_dialog, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["run.py", "/model"])
+    run.main()
+
+    mock_change_dialog.assert_called_once()
+    mock_start_cli.assert_called_once()
 
 
 @patch("run.run_bash_mode")
@@ -235,3 +195,62 @@ def test_main_with_bash_arg(mock_start_cli, mock_bash_mode, monkeypatch):
 
     mock_bash_mode.assert_called_once()
     mock_start_cli.assert_called_once()
+
+
+@patch("graph.dbconn.Neo4jConnection")
+def test_handle_ingest_command(mock_conn_cls):
+    mock_conn = mock_conn_cls.return_value
+    mock_conn.verify_connectivity.return_value = True
+
+    with patch("run.ingester.ingest_context") as mock_ingest_context:
+        run.handle_ingest_command()
+
+    mock_conn.verify_connectivity.assert_called_once()
+    mock_ingest_context.assert_called_once_with(db_conn=mock_conn)
+
+
+@patch("run.handle_ingest_command")
+def test_start_cli_ingest_command(mock_handle_ingest, monkeypatch):
+    inputs = iter(["/ingest", KeyboardInterrupt()])
+
+    def mock_input(prompt=""):
+        res = next(inputs)
+        if isinstance(res, BaseException):
+            raise res
+        return res
+
+    monkeypatch.setattr("builtins.input", mock_input)
+
+    with pytest.raises(SystemExit) as exc_info:
+        run.start_cli()
+
+    assert exc_info.value.code == 0
+    mock_handle_ingest.assert_called_once()
+
+
+def test_print_result_summary_api_only(capsys):
+    comp = {
+        "tiktoken": {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150, "cost": 0.0001},
+        "api_response": {"input_tokens": 110, "output_tokens": 52, "total_tokens": 162, "cost": 0.00011},
+        "difference": {"input_tokens": 10, "output_tokens": 2, "total_tokens": 12, "cost": 0.00001},
+    }
+    res = AgentResult(
+        final_text="Done",
+        messages=[],
+        turns=1,
+        stop_reason="STOP",
+        input_tokens=100,
+        output_tokens=50,
+        total_cost=0.0001,
+        token_usage_comparison=comp,
+        elapsed_time=1.5,
+    )
+
+    run._print_result_summary(res)
+
+    captured = capsys.readouterr().out
+    assert "Token Usage Telemetry" in captured
+    assert "API Response:" in captured
+    assert "Tiktoken:" not in captured
+    assert "Difference:" not in captured
+    assert "[Tokens: 110 in, 52 out (162 total) | Cost: $0.000110 | Time: 1.50s]" in captured

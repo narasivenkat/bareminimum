@@ -17,6 +17,7 @@
             --accent-orange: #fb923c;
             --accent-cyan: #22d3ee;
             --accent-pink: #f472b6;
+            --accent-yellow: #facc15;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -69,6 +70,9 @@
             color: var(--accent-blue);
             margin-bottom: 0.75rem;
         }
+        .card.bare h2 {
+            color: var(--accent-yellow);
+        }
         .card.sec h2 {
             color: var(--accent-green);
         }
@@ -83,6 +87,9 @@
         }
         .card.graph h2 {
             color: var(--accent-pink);
+        }
+        .card.pipe h2 {
+            color: var(--accent-green);
         }
         .card p {
             color: #cbd5e1;
@@ -112,13 +119,33 @@
 <body>
     <header>
         <h1>BareMinimum Harness Architecture Hub</h1>
-        <p>Comprehensive design documents, sub-agent orchestrator guides, evaluation frameworks, security systems, reading optimization strategies, token usage reduction guides, and Graph RAG specifications.</p>
+        <p>Comprehensive design documents, execution flow guides, sub-agent orchestrator guides, evaluation frameworks, security systems, reading optimization strategies, token usage reduction guides, and Graph RAG specifications.</p>
     </header>
 
     <div class="grid">
+        <a href="bareminimum_architecture_guide.html" class="card bare">
+            <div>
+                <h2>1. BareMinimum Harness Architecture & Engineering Guide</h2>
+                <p>Complete technical manual covering the BareMinimum Agentic Coding Harness: control loop, tool registry, workspace security boundaries, prompt injection defense, AutoGen orchestrator, sliding window compaction, and Graph RAG intelligence.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-yellow); border-color: var(--accent-yellow);">Harness Core • Control Loop • Workspace Security • Memory Compaction</span>
+            </div>
+        </a>
+
+        <a href="bareminimum_flow_guide.html" class="card bare">
+            <div>
+                <h2>2. BareMinimum End-to-End Execution Flow Guide</h2>
+                <p>Comprehensive step-by-step breakdown of BareMinimum execution flow: CLI flags, control loop state machine, plain-text narration validation, parallel read vs mutex write dispatching, governance interception, context compaction, multi-agent AutoGen routing, and interactive simulator.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-blue); border-color: var(--accent-blue);">Execution Flow • Narration Logic • Parallel Reads • Interactive Simulator</span>
+            </div>
+        </a>
+
         <a href="orchestrator_subagents_guide.html" class="card">
             <div>
-                <h2>1. Orchestrator & Sub-Agents Architecture Guide</h2>
+                <h2>3. Orchestrator & Sub-Agents Architecture Guide</h2>
                 <p>Detailed guide on multi-agent workload distribution: parallel read task execution across AutoGen Explorer sub-agents, combined with serialized write queue execution under mutex lock.</p>
             </div>
             <div>
@@ -128,7 +155,7 @@
 
         <a href="governance_security_guide.html" class="card sec">
             <div>
-                <h2>2. Governance & Security Architecture Guide</h2>
+                <h2>4. Governance & Security Architecture Guide</h2>
                 <p>Comprehensive guide detailing existing governance & security features (Prompt Injection Sanitizer, HITL Write Approvals, JSON Audit Logger, Rate Limit Circuit Breaker) and remaining enterprise enhancements.</p>
             </div>
             <div>
@@ -138,7 +165,7 @@
 
         <a href="evaluation_benchmarking_guide.html" class="card eval">
             <div>
-                <h2>3. Evaluating & Benchmarking Agent Coding Harnesses</h2>
+                <h2>5. Evaluating & Benchmarking Agent Coding Harnesses</h2>
                 <p>Engineering guide on methodologies, metrics (Pass@k, Resolved Rate), benchmark datasets (SWE-bench, HumanEval), ephemeral sandbox execution, and implementation patterns for evaluating AI coding harnesses.</p>
             </div>
             <div>
@@ -148,7 +175,7 @@
 
         <a href="sharper_reading_strategy.html" class="card strat">
             <div>
-                <h2>4. Sharpening File Reading Operations Strategy Guide</h2>
+                <h2>6. Sharpening File Reading Operations Strategy Guide</h2>
                 <p>Operational strategy for eliminating redundant agent reads, enforcing target-first single file isolation, line-bounded windowed reads, pattern searching, and context window token optimization.</p>
             </div>
             <div>
@@ -158,7 +185,7 @@
 
         <a href="token_usage_optimization_guide.html" class="card tok">
             <div>
-                <h2>5. Harness Token Usage Optimization Guide</h2>
+                <h2>7. Harness Token Usage Optimization Guide</h2>
                 <p>Engineering guide detailing codebase opportunities to reduce token consumption by 60%–85%: tool schema deduplication, historical output pruning, compact serialization, diff truncation, and proactive memory compaction while preserving harness performance.</p>
             </div>
             <div>
@@ -168,11 +195,41 @@
 
         <a href="graph_rag_token_optimization_guide.html" class="card graph">
             <div>
-                <h2>6. Graph RAG Token Optimization Guide</h2>
+                <h2>8. Graph RAG Token Optimization Guide</h2>
                 <p>Architectural guide and production implementation for indexing Java (Spring Boot), React (Next.js), and Markdown docs into Neo4j with multi-repo scoping, incremental reindexing, and BareMinimum tool integration yielding 90%+ token savings.</p>
             </div>
             <div>
                 <span class="badge" style="color: var(--accent-pink); border-color: var(--accent-pink);">Graph RAG • Neo4j 5.x • Spring Boot & Next.js • Delta Indexing</span>
+            </div>
+        </a>
+
+        <a href="ingestion_pipeline_architecture_guide.md" class="card pipe">
+            <div>
+                <h2>9. Ingestion Pipeline Architecture Guide</h2>
+                <p>Architectural guide comparing monolithic bulk ingestion vs incremental step-by-step ingestion for ASTs, Call Graphs, and Docu Links in Neo4j, with concrete data structure and Cypher examples.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-green); border-color: var(--accent-green);">Ingestion Pipeline • Incremental Processing • ASTs • Call Graphs</span>
+            </div>
+        </a>
+
+        <a href="file_based_graph_storage_guide.html" class="card graph">
+            <div>
+                <h2>10. File-Based Graph Storage vs. Neo4j Guide</h2>
+                <p>Options, pros/cons, and recommendations for storing the code-knowledge graph as files (JSON/JSONL, Kùzu embedded, SQLite, NetworkX) instead of Neo4j, grounded in the harness node/relationship schema and <code>CALLS*1..2</code> traversal needs.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-pink); border-color: var(--accent-pink);">File Storage • JSON • Kùzu • SQLite • Trade-offs</span>
+            </div>
+        </a>
+
+        <a href="multi_session_support_guide.html" class="card bare">
+            <div>
+                <h2>11. Multi-Session Support Analysis & Architectural Guide</h2>
+                <p>Comprehensive analysis on whether BareMinimum currently handles single or multiple sessions, plus architectural blueprint, storage schema, <code>SessionManager</code> engine, and code implementation to enable multi-session capabilities.</p>
+            </div>
+            <div>
+                <span class="badge" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">Multi-Session • SessionStore • Concurrency Locks • Sandbox Isolation</span>
             </div>
         </a>
     </div>

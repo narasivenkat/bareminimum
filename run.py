@@ -8,6 +8,7 @@ import subprocess
 import sys
 from typing import List, Optional
 
+from graph import ingester
 from llm.llm_client import available_models, default_model
 from log.log import get_logger
 from loop.loop import AgentResult, make_llm_model, run_agent
@@ -121,24 +122,49 @@ def run_orchestrator_cli(
 
 
 def _print_result_summary(result: AgentResult) -> None:
-    """Print agent execution telemetry summary including side-by-side token accounting."""
+    """Print agent execution telemetry summary showing API response token usage."""
+    in_tok = result.input_tokens
+    out_tok = result.output_tokens
+    cost = result.total_cost
+
     if hasattr(result, "token_usage_comparison") and result.token_usage_comparison:
         comp = result.token_usage_comparison
         api = comp.get("api_response", {})
         if api.get("total_tokens", 0) > 0:
-            tik = comp.get("tiktoken", {})
-            diff = comp.get("difference", {})
-            print("\n--- Token Usage Telemetry Comparison ---")
-            print(f"  Tiktoken:     {tik.get('input_tokens', 0)} in, {tik.get('output_tokens', 0)} out ({tik.get('total_tokens', 0)} total) | Cost: ${tik.get('cost', 0.0):.6f}")
+            print("\n--- Token Usage Telemetry ---")
             print(f"  API Response: {api.get('input_tokens', 0)} in, {api.get('output_tokens', 0)} out ({api.get('total_tokens', 0)} total) | Cost: ${api.get('cost', 0.0):.6f}")
-            print(f"  Difference:   {diff.get('input_tokens', 0):+} in, {diff.get('output_tokens', 0):+} out ({diff.get('total_tokens', 0):+} total) | Cost: ${diff.get('cost', 0.0):+.6f}")
             print("----------------------------------------")
+            in_tok = api.get("input_tokens", in_tok)
+            out_tok = api.get("output_tokens", out_tok)
+            cost = api.get("cost", cost)
+
     print(
-        f"\n[Tokens: {result.input_tokens} in, {result.output_tokens} out "
-        f"({result.input_tokens + result.output_tokens} total) | "
-        f"Cost: ${result.total_cost:.6f} | "
+        f"\n[Tokens: {in_tok} in, {out_tok} out "
+        f"({in_tok + out_tok} total) | "
+        f"Cost: ${cost:.6f} | "
         f"Time: {result.elapsed_time:.2f}s]"
     )
+
+
+def handle_ingest_command() -> None:
+    """Handle /ingest command: call ingester.ingest_context directly."""
+    logger.info("Ingesting code/documents...")
+    from graph.dbconn import Neo4jConnection
+
+    db_conn = Neo4jConnection()
+    if not db_conn.verify_connectivity():
+        logger.error(
+            "Cannot connect to Neo4j at %s. Check that the server is running and "
+            "that NEO4J_USERID / NEO4J_PASSWORD are set. Aborting ingestion.",
+            db_conn.uri,
+        )
+        print(
+            f"ERROR: Could not connect to Neo4j at {db_conn.uri}. "
+            "Verify the server is up and NEO4J_USERID/NEO4J_PASSWORD are set."
+        )
+        return
+
+    ingester.ingest_context(db_conn=db_conn)
 
 
 def start_cli() -> None:
@@ -149,6 +175,11 @@ def start_cli() -> None:
         try:
             user_input = input("\nWhat task do you want to perform? ").strip()
             if not user_input:
+                continue
+
+            # Intercept model command
+            if user_input.lower() == "/ingest":
+                handle_ingest_command()
                 continue
 
             # Intercept model command

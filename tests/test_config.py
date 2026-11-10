@@ -75,7 +75,7 @@ def test_config_manager_missing_file(tmp_path):
 
 def test_config_manager_invalid_yaml(tmp_path):
     invalid_file = tmp_path / "invalid.yaml"
-    invalid_file.write_text("::invalid yaml::", encoding="utf-8")
+    invalid_file.write_text("invalid: [yaml: {", encoding="utf-8")
     ConfigManager.set_config_file_path(str(invalid_file))
 
     with pytest.raises(ConfigurationError) as exc_info:

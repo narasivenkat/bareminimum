@@ -78,3 +78,10 @@ LLM:
       OUTPUT_COST_PER_1M: 0.20
 
 TOOLS: {}
+
+NEO4J:
+  URI: "bolt://localhost:7687"
+  HOST: "localhost"
+  PORT: 7687
+  SCHEME: "bolt"
+  DATABASE: "orderservice"

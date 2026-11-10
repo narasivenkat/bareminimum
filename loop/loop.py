@@ -59,10 +59,11 @@ DEFAULT_SYSTEM_PROMPT = (
     "Whenever you call a tool, you MUST also write one short narration of plain "
     "text in the message content that narrates why you want to use the tool for (example: 'Reading loop.py to inspect the agent loop.'"
     "Do not emit a tool call with empty narration."
-    "Make read only tool calls like list_dir, read_file, file_search in parallel for multiple directories or files rather than one by one."
+    "Make read only tool calls like list_dir, read_file, file_search, graph_retrieve in parallel for multiple directories or files rather than one by one."
     "When a specific file name is provided in then sharpen file search using the details instead of a broad search or directory listing"
     "Make write tool calls like write_file one by one only"
     "When writing to an existing file write only what is required on top of the existing content and do not overwrite the entire file unless explicitly asked to do so."
+    "For better token optimization, use graph retrieval (graph_retrieve) when querying relationships, dependencies, or structural entities instead of reading full files."
     "When the task is complete, reply with a final answer and no tool calls."
 )
 
@@ -78,6 +79,10 @@ READ_TOOLS = {
     "read_excel",
     "fetch_url",
     "web_search",
+    "graph_retrieve",
+    "graph_search",
+    "graph_retriever",
+    "retrieve_from_graph",
 }
 
 # Fallback used only if the config value is missing or invalid.

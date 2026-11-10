@@ -23,5 +23,10 @@ PyYAML               # Read config.yaml / models.yaml / settings.yaml
 # --- Resilience ---
 tenacity             # Robust retry / backoff
 
+# --- Parsing & Graph ---
+tree-sitter
+tree-sitter-java
+neo4j
+
 # --- Testing ---
 pytest

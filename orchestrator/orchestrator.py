@@ -3,7 +3,7 @@
 Implements the Orchestrator-Sub-Agent pattern using Microsoft AutoGen:
 - Parallel read task dispatch across Explorer Sub-Agents via a_initiate_chat + asyncio.gather.
 - Strict serialization of file mutations through Writer Agent & Mutex-Locked Write Queue.
-- Parallel execution of LLM read tool calls (list_dir, read_file, file_search).
+- Parallel execution of LLM read tool calls (list_dir, read_file, file_search, graph_retrieve).
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from log.log import get_logger
 from orchestrator.tools import (
     async_delete_file,
     async_file_search,
+    async_graph_retrieve,
     async_list_dir,
     async_read_file,
     async_write_file,
@@ -62,7 +63,7 @@ def orchestrate_read_tool_calls(
     registry: Any,
 ) -> List[Dict[str, Any]]:
     """
-    Feed read tool calls (e.g., list_dir, read_file, file_search) to the orchestrator
+    Feed read tool calls (e.g., list_dir, read_file, file_search, graph_retrieve) to the orchestrator
     to execute in parallel across worker threads.
 
     Args:
@@ -131,7 +132,7 @@ class AutoGenOrchestratorSystem:
             name="ExplorerSubAgent",
             system_message=(
                 "You are a code exploration sub-agent. Inspect and analyze files using "
-                "read tools (async_read_file, async_list_dir, async_file_search)."
+                "read tools (async_read_file, async_list_dir, async_file_search, async_graph_retrieve)."
             ),
             llm_config=self.llm_config,
         )
@@ -177,6 +178,12 @@ class AutoGenOrchestratorSystem:
             caller=self.explorer_agent,
             executor=self.orchestrator,
             description="Search codebase for files matching a pattern",
+        )
+        register_fn(
+            async_graph_retrieve,
+            caller=self.explorer_agent,
+            executor=self.orchestrator,
+            description="Retrieve data from knowledge graph database",
         )
 
         # Register synchronized write/delete tools to Writer Agent (executed by Orchestrator)

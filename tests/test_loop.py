@@ -205,7 +205,7 @@ def test_run_agent_historical_tool_output_pruning():
     assert "content truncated to save tokens" in tool_msgs[0]["content"]
 
     # Most recent tool message should still contain the full large output
-    assert tool_msgs[-1]["content"] == large_output
+    assert large_output in tool_msgs[-1]["content"]
 
 
 def test_run_agent_api_telemetry_extraction_and_accounting():

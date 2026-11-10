@@ -1,15 +1,16 @@
 """Unit tests for tools package."""
 
-import pytest
 from pathlib import Path
+import pytest
 
 from tools import build_default_registry
 from tools._common import resolve_path
 from tools.delete_file import delete_file
 from tools.file_search import file_search
+from tools.graph_retrieve import graph_retrieve
 from tools.list_dir import list_dir
 from tools.read_file import read_file
-from tools.registry import ToolRegistry, TOOL_ALIASES
+from tools.registry import TOOL_ALIASES, ToolRegistry
 from tools.write_file import write_file
 
 
@@ -234,13 +235,36 @@ def test_file_search(tmp_path, monkeypatch):
     assert res_empty["files"] == []
 
 
-def test_build_default_registry_includes_delete_file():
+def test_graph_retrieve():
+    # String search query
+    res = graph_retrieve(request="User")
+    assert "status" in res
+    assert res["query_type"] in ("search", "cypher")
+
+    # Dict query with label
+    res_dict = graph_retrieve(request={"request": "test_node"}, node_label="Entity")
+    assert "status" in res_dict
+
+    # Explicit Cypher query
+    res_cypher = graph_retrieve(cypher_query="MATCH (n) RETURN n LIMIT 5")
+    assert res_cypher["query_type"] == "cypher"
+
+    # Missing query error
+    res_err = graph_retrieve()
+    assert res_err["status"] == "error"
+
+
+def test_build_default_registry_includes_delete_file_and_graph_retrieve():
     registry = build_default_registry()
     assert "delete_file" in registry.names
     assert "remove_file" in registry.names
     assert "delete" in registry.names
     assert "unlink" in registry.names
     assert "file_search" in registry.names
+    assert "graph_retrieve" in registry.names
+    assert "graph_search" in registry.names
+    assert "graph_retriever" in registry.names
+    assert "retrieve_from_graph" in registry.names
 
 
 def test_schema_deduplication():
@@ -255,6 +279,7 @@ def test_schema_deduplication():
     assert "delete_file" in schema_names
     assert "list_dir" in schema_names
     assert "file_search" in schema_names
+    assert "graph_retrieve" in schema_names
 
     # Aliases should be omitted from schemas
     for alias in TOOL_ALIASES:
@@ -263,6 +288,8 @@ def test_schema_deduplication():
     # But dispatch and names still support aliases
     assert "create_file" in registry.names
     assert "create_file" in registry
+    assert "graph_search" in registry.names
+    assert "graph_search" in registry
 
 
 def test_tool_registry():

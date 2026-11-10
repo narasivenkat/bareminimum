@@ -21,6 +21,7 @@ MODULES: List[str] = [
     "tools.delete_file",
     "tools.list_dir",
     "tools.file_search",
+    "tools.graph_retrieve",
 ]
 
 

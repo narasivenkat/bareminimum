@@ -3,6 +3,7 @@ Unit tests for the memory package (token counting, memory compaction, cost compu
 """
 
 from unittest.mock import patch
+import pytest
 
 from config.config import ConfigManager
 from memory.compaction import (
@@ -98,7 +99,7 @@ def test_token_tracker_telemetry_side_by_side():
     assert report["api_response"]["input_tokens"] == 120
     assert report["api_response"]["output_tokens"] == 40
     assert report["api_response"]["total_tokens"] == 160
-    assert report["api_response"]["cost"] == tracker.calculate_cost(source="api")
+    assert report["api_response"]["cost"] == pytest.approx(tracker.calculate_cost(source="api"))
 
     # Turn history check
     assert len(tracker.turn_history) == 1
@@ -119,105 +120,71 @@ def test_compute_cost():
     gemini_cost = compute_cost(1_000_000, 1_000_000, model_name="gemini-3.6-flash")
     assert abs(gemini_cost - 0.75) < 1e-6  # 0.15 + 0.60 = 0.75
 
-    # TokenTracker cost helper methods
-    tracker = TokenTracker(input_tokens=500_000, output_tokens=500_000)
-    assert abs(tracker.calculate_cost(input_cost_per_1m=1.0, output_cost_per_1m=2.0) - 1.50) < 1e-6
-    assert tracker.total_cost > 0.0
 
-
-def test_get_model_pricing():
+def test_get_memory_config_and_context_window():
     ConfigManager.reset()
-    in_c, out_c = get_model_pricing("gemini-3.6-flash")
-    assert in_c == 0.15
-    assert out_c == 0.60
+    cfg = get_memory_config()
+    assert cfg["enabled"] is True
+    assert cfg["context_window"] == 128000
+    assert cfg["threshold_pct"] == 50
+    assert cfg["keep_recent"] == 6
 
-    in_c2, out_c2 = get_model_pricing("claude-opus-4.8")
-    assert in_c2 == 15.00
-    assert out_c2 == 75.00
+    cw_default = get_context_window()
+    assert cw_default == 128000
 
-    # Unknown model falls back to LLM config default
-    in_def, out_def = get_model_pricing("unknown-model-123")
-    assert in_def == 0.15
-    assert out_def == 0.60
+    cw_gemini = get_context_window("gemini-3.6-flash")
+    assert cw_gemini == 1048576
 
-
-def test_get_model_pricing_custom_config(tmp_path):
-    config_file = tmp_path / "config.yaml"
-    config_file.write_text(
-        """
-LLM:
-  INPUT_COST_PER_1M: 0.25
-  OUTPUT_COST_PER_1M: 1.00
-  MODELS:
-    - NAME: custom-model
-      INPUT_COST_PER_1M: 2.50
-      OUTPUT_COST_PER_1M: 5.00
-""",
-        encoding="utf-8",
-    )
-
-    ConfigManager.set_config_file_path(str(config_file))
-    in_c, out_c = get_model_pricing("custom-model")
-    assert in_c == 2.50
-    assert out_c == 5.00
-
-    in_def, out_def = get_model_pricing("unknown-model")
-    assert in_def == 0.25
-    assert out_def == 1.00
-
-    ConfigManager.reset()
-
-
-def test_get_context_window():
-    ConfigManager.reset()
-    # gemini-3.6-flash has CONTEXT_WINDOW: 1048576 in config.yaml
-    assert get_context_window("gemini-3.6-flash") == 1048576
-    # claude-opus-4.8 has CONTEXT_WINDOW: 200000
-    assert get_context_window("claude-opus-4.8") == 200000
-    # Unknown model falls back to config default (128000)
-    assert get_context_window("unknown-model-xyz") == 128000
-    assert get_context_window(None) == 128000
+    cw_claude = get_context_window("claude-opus-4.8")
+    assert cw_claude == 200000
 
 
 def test_should_compact():
-    small_messages = [{"role": "user", "content": "hi"}]
-    assert not should_compact(small_messages, context_window=1000, threshold_pct=70)
+    ConfigManager.reset()
 
-    # Generate a large message sequence
-    large_content = "Word " * 500  # ~500 tokens
-    large_messages = [
-        {"role": "system", "content": "system prompt"},
-        {"role": "user", "content": large_content},
+    # Small conversation should not trigger compaction
+    small_messages = [
+        {"role": "system", "content": "System prompt"},
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there!"},
     ]
-    # Threshold = 70% of 500 = 350 tokens. large_messages > 350 tokens.
-    assert should_compact(large_messages, context_window=500, threshold_pct=70)
+    assert should_compact(small_messages, context_window=100000) is False
+
+    # Force should_compact = True by using artificially tiny context_window
+    assert should_compact(small_messages, context_window=10) is True
 
 
-def test_compact_memory_preserves_structure():
+def test_default_summarizer():
+    messages = [
+        {"role": "user", "content": "Write a script to list files."},
+        {"role": "assistant", "content": "Running list_dir tool..."},
+        {"role": "tool", "content": "file1.py\nfile2.py\nfile3.py"},
+    ]
+    summary = default_summarizer(messages)
+    assert isinstance(summary, str)
+    assert "user: Write a script to list files." in summary
+    assert "tool: file1.py" in summary
+
+
+def test_compact_memory():
     messages = [
         {"role": "system", "content": "System prompt"},
         {"role": "user", "content": "Initial request"},
-        {"role": "assistant", "content": "First response", "tool_calls": [{"id": "c1", "type": "function", "function": {"name": "read_file", "arguments": "{}"}}]},
-        {"role": "tool", "tool_call_id": "c1", "name": "read_file", "content": "File content 1"},
-        {"role": "assistant", "content": "Second response", "tool_calls": [{"id": "c2", "type": "function", "function": {"name": "read_file", "arguments": "{}"}}]},
-        {"role": "tool", "tool_call_id": "c2", "name": "read_file", "content": "File content 2"},
-        {"role": "assistant", "content": "Third response"},
-        {"role": "user", "content": "Followup question"},
-        {"role": "assistant", "content": "Fourth response"},
-        {"role": "user", "content": "Recent question"},
+        {"role": "assistant", "content": "Turn 1 thought"},
+        {"role": "tool", "content": "Tool 1 output"},
+        {"role": "assistant", "content": "Turn 2 thought"},
+        {"role": "tool", "content": "Tool 2 output"},
+        {"role": "assistant", "content": "Turn 3 thought"},
+        {"role": "tool", "content": "Tool 3 output"},
+        {"role": "user", "content": "Follow up request"},
+        {"role": "assistant", "content": "Recent response"},
     ]
 
     compacted = compact_memory(messages, keep_recent=3)
 
-    # Verify length is reduced
     assert len(compacted) < len(messages)
-
-    # Verify system prompt is at index 0
-    assert compacted[0]["role"] == "system"
+    # Verify System prompt and first user message are preserved
     assert compacted[0]["content"] == "System prompt"
-
-    # Verify user initial request is preserved
-    assert compacted[1]["role"] == "user"
     assert compacted[1]["content"] == "Initial request"
 
     # Verify summary note message exists

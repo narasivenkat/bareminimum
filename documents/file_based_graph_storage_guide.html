@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File-Based Graph Storage vs. Neo4j — Options & Trade-offs</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-code: #090d16;
+            --border-color: #334155;
+            --border-glow: #38bdf840;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-orange: #fb923c;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #f472b6;
+            --accent-yellow: #facc15;
+            --accent-red: #f87171;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 310px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar ul { list-style: none; }
+        .sidebar li { margin-bottom: 0.6rem; }
+
+        .sidebar a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
+            display: block;
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            color: var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .sidebar-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green) !important;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 0.75rem !important;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 6px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 310px;
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1200px;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        header p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 850px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+        }
+
+        .badge.green { color: var(--accent-green); border-color: rgba(74, 222, 128, 0.3); }
+        .badge.purple { color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.3); }
+        .badge.orange { color: var(--accent-orange); border-color: rgba(251, 146, 60, 0.3); }
+        .badge.pink { color: var(--accent-pink); border-color: rgba(244, 114, 182, 0.3); }
+
+        section {
+            margin-bottom: 3.5rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+            margin: 1.75rem 0 0.85rem 0;
+        }
+
+        h4 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        ul, ol {
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+        }
+
+        li { margin-bottom: 0.4rem; }
+
+        /* Cards and Grid Layouts */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .card h4 {
+            color: var(--accent-blue);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .card p {
+            font-size: 0.88rem;
+            margin-bottom: 0;
+            color: var(--text-secondary);
+        }
+
+        /* Diagrams & Visual Blocks */
+        .diagram-container {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            line-height: 1.4;
+            white-space: pre;
+        }
+
+        /* Code Syntax Formatting */
+        pre {
+            background-color: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #f1f5f9;
+        }
+
+        code {
+            font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--accent-cyan);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            border-left: 4px solid var(--accent-blue);
+            background-color: rgba(56, 189, 248, 0.08);
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .callout.warning {
+            border-left-color: var(--accent-orange);
+            background-color: rgba(251, 146, 60, 0.08);
+        }
+
+        .callout.security {
+            border-left-color: var(--accent-red);
+            background-color: rgba(248, 113, 113, 0.08);
+        }
+
+        .callout.success {
+            border-left-color: var(--accent-green);
+            background-color: rgba(74, 222, 128, 0.08);
+        }
+
+        .callout-title {
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        tr:hover { background-color: rgba(255, 255, 255, 0.02); }
+
+        .yes { color: var(--accent-green); font-weight: 600; }
+        .no { color: var(--accent-red); font-weight: 600; }
+        .maybe { color: var(--accent-orange); font-weight: 600; }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <a href="index.html" class="sidebar-back">← Architecture Hub</a>
+        <h2>File-Based Graph Storage</h2>
+        <ul>
+            <li><a href="#summary">Executive Summary</a></li>
+            <li><a href="#requirements">1. Requirements Baseline</a></li>
+            <li><a href="#options">2. File-Based Storage Options</a></li>
+            <li><a href="#option-a">2A. JSON / JSONL</a></li>
+            <li><a href="#option-b">2B. Kùzu Embedded</a></li>
+            <li><a href="#option-c">2C. SQLite</a></li>
+            <li><a href="#option-d">2D. NetworkX File</a></li>
+            <li><a href="#comparison">3. Side-by-Side Comparison</a></li>
+            <li><a href="#impact">4. Impact on This Codebase</a></li>
+            <li><a href="#recommendations">5. Recommendations</a></li>
+            <li><a href="#takeaways">6. Key Takeaways</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header>
+            <h1>File-Based Graph Storage vs. Neo4j</h1>
+            <p>Options, trade-offs, and recommendations for storing the BareMinimum code-knowledge graph as one or more files instead of a Neo4j database.</p>
+            <div class="header-meta">
+                <span class="badge">Graph Storage</span>
+                <span class="badge green">JSON / JSONL</span>
+                <span class="badge purple">Kùzu Embedded</span>
+                <span class="badge orange">SQLite</span>
+                <span class="badge pink">NetworkX</span>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section id="summary">
+            <h2>Executive Summary</h2>
+            <p>Today, <code>bareminimum</code> builds its code-knowledge graph inside a <strong>Neo4j</strong> database. The ingestion pipeline (<code>graph/ingester.py</code>) parses source files into ASTs, call graphs, endpoint mappings, and documentation links, then the inserter (<code>graph/neo4j_inserter.py</code>) writes them as <strong>nodes</strong> (<code>File</code>, <code>Class</code>, <code>Method</code>, <code>Endpoint</code>, <code>Document</code>, <code>ASTNode</code>) and <strong>relationships</strong> (<code>DEFINES</code>, <code>HAS_METHOD</code>, <code>CALLS</code>, <code>HANDLED_BY</code>, <code>DOCUMENTS</code>, <code>CONTAINS_AST</code>). Retrieval (<code>graph/retrieve.py</code>) runs Cypher queries against that database.</p>
+            <div class="callout">
+                <div class="callout-title">Core Question</div>
+                <p style="margin-bottom:0;">Is it possible to store the graph as a file (or a few files) instead of in Neo4j? What are the pros and cons?</p>
+            </div>
+            <p><strong>Short answer:</strong> Yes — it is entirely possible, and for a "bare minimum" harness it can be attractive. But the right choice depends on <strong>graph size</strong>, <strong>query complexity</strong>, and whether you need <strong>multi-hop traversals</strong> like the current <code>CALLS*1..2</code> queries.</p>
+        </section>
+
+        <!-- Section 1: Requirements -->
+        <section id="requirements">
+            <h2>1. What the Graph Must Support</h2>
+            <p>Before comparing storage formats, it helps to pin down what the current Neo4j usage actually requires. From <code>graph/retrieve.py</code>, the graph must support:</p>
+            <table>
+                <thead>
+                    <tr><th>Capability</th><th>Example in code</th><th>Difficulty in files</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Node lookup by property</td><td><code>MATCH (c:Class) WHERE c.name CONTAINS $term</code></td><td class="yes">Easy</td></tr>
+                    <tr><td>Substring / fuzzy matching</td><td><code>WHERE f.path CONTAINS $term</code></td><td class="yes">Easy</td></tr>
+                    <tr><td>1-hop relationship traversal</td><td><code>(f:File)-[:DEFINES]->(c:Class)</code></td><td class="yes">Easy</td></tr>
+                    <tr><td>Multi-hop / variable-length traversal</td><td><code>(m)-[:CALLS*1..2]->(callee:Method)</code></td><td class="no">Hard</td></tr>
+                    <tr><td>Reverse traversal (callers)</td><td><code>(caller:Method)-[:CALLS]->(m)</code></td><td class="maybe">Medium</td></tr>
+                    <tr><td>Collecting related nodes</td><td><code>collect(DISTINCT callee)</code></td><td class="maybe">Medium</td></tr>
+                    <tr><td>Per-repo isolation</td><td>database named after repo</td><td class="yes">Easy</td></tr>
+                    <tr><td>Incremental updates via hashes</td><td><code>get_stored_file_hashes()</code></td><td class="maybe">Medium</td></tr>
+                </tbody>
+            </table>
+            <div class="callout warning">
+                <div class="callout-title">⚠ Decisive Factor</div>
+                <p style="margin-bottom:0;">The hardest capability to reproduce with plain files is <strong>variable-length traversal</strong> (<code>CALLS*1..2</code> and deeper). Keep that in mind when reading the options below.</p>
+            </div>
+        </section>
+
+        <!-- Section 2: Options -->
+        <section id="options">
+            <h2>2. File-Based Storage Options</h2>
+
+            <h3 id="option-a">Option A: Plain JSON / JSONL Graph File(s)</h3>
+            <p>Store the whole graph as one (or a few) JSON documents: an array of nodes and an array of edges, mirroring the in-memory structures the pipeline already builds.</p>
+            <pre><code>{
+  "nodes": [
+    { "id": "File:graph/retrieve.py", "label": "File", "path": "graph/retrieve.py", "hash": "a1b2c3" },
+    { "id": "Class:GraphRetriever",   "label": "Class", "name": "GraphRetriever" },
+    { "id": "Method:execute_cypher",  "label": "Method", "name": "execute_cypher" }
+  ],
+  "edges": [
+    { "from": "File:graph/retrieve.py", "type": "DEFINES",    "to": "Class:GraphRetriever" },
+    { "from": "Class:GraphRetriever",   "type": "HAS_METHOD", "to": "Method:execute_cypher" }
+  ]
+}</code></pre>
+            <p>Typical layout: one file per repo (<code>&lt;repo&gt;.graph.json</code>), or split by concern (<code>nodes.jsonl</code>, <code>edges.jsonl</code>, <code>docs.jsonl</code>).</p>
+            <h4>Pros</h4>
+            <ul>
+                <li><strong>Zero infrastructure</strong>: No database server, no <code>NEO4J_USERID</code>/<code>NEO4J_PASSWORD</code>, no <code>bolt://localhost:7687</code> connection. Removes a whole class of setup/auth failures.</li>
+                <li><strong>Human-readable &amp; diffable</strong>: Fits the "bare minimum" ethos; the graph can live in Git next to the code and be code-reviewed.</li>
+                <li><strong>Trivially portable</strong>: Copy a file to share or cache a graph.</li>
+                <li><strong>Simple incremental writes</strong>: The existing hash-tracking logic (<code>get_stored_file_hashes</code>) maps cleanly onto a JSON <code>hash</code> field.</li>
+            </ul>
+            <h4>Cons</h4>
+            <ul>
+                <li><strong>No query engine</strong>: You must load the file into memory and implement traversal yourself. Multi-hop queries like <code>CALLS*1..2</code> become hand-written graph walks (BFS/DFS).</li>
+                <li><strong>Whole-file load</strong>: JSON is read all-or-nothing; a large repo graph must be fully loaded into RAM to answer even one query.</li>
+                <li><strong>No concurrency / locking</strong>: Two writers can corrupt the file; Neo4j handles transactions.</li>
+                <li><strong>No indexes</strong>: Property lookups become O(n) scans unless you build in-memory indexes.</li>
+            </ul>
+            <div class="callout success">
+                <div class="callout-title">✓ Best when</div>
+                <p style="margin-bottom:0;">Small-to-medium repos, single process, graph comfortably fits in memory.</p>
+            </div>
+
+            <h3 id="option-b">Option B: Embedded Graph Database File (Kùzu)</h3>
+            <p>Use an <strong>embedded</strong> graph database that stores everything in a local file/directory but still speaks a query language. <strong>Kùzu</strong> is the closest drop-in: it is embeddable (like SQLite), file-based, and supports <strong>Cypher</strong> — including variable-length traversals.</p>
+            <h4>Pros</h4>
+            <ul>
+                <li><strong>Keeps Cypher</strong>: Queries like <code>(m)-[:CALLS*1..2]->(callee)</code> work with minimal rewrites, so <code>graph/retrieve.py</code> changes stay small.</li>
+                <li><strong>No server process</strong>: The database is a local folder; no daemon, ports, or credentials.</li>
+                <li><strong>Real indexes &amp; out-of-core execution</strong>: Scales far past what hand-rolled JSON can do without loading everything into RAM.</li>
+                <li><strong>Transactional</strong>: Safe concurrent reads, atomic writes.</li>
+            </ul>
+            <h4>Cons</h4>
+            <ul>
+                <li><strong>New dependency</strong>: Adds a library (and a compiled engine) to <code>requirements.txt</code>.</li>
+                <li><strong>Not purely "a file you can read"</strong>: It's a binary store/directory, not human-diffable.</li>
+                <li><strong>Cypher dialect differences</strong>: Not 100% identical to Neo4j; some queries need tweaks.</li>
+                <li><strong>Less ubiquitous</strong>: Smaller ecosystem/community than Neo4j.</li>
+            </ul>
+            <div class="callout success">
+                <div class="callout-title">✓ Best when</div>
+                <p style="margin-bottom:0;">You want to drop the Neo4j server but keep rich graph queries and scale.</p>
+            </div>
+
+            <h3 id="option-c">Option C: SQLite (Relational Tables Emulating a Graph)</h3>
+            <p>Store nodes and edges in a single-file SQLite database: a <code>nodes</code> table and an <code>edges</code> table, with indexes on labels, names, and endpoints.</p>
+            <pre><code>CREATE TABLE nodes (id TEXT PRIMARY KEY, label TEXT, name TEXT, path TEXT, hash TEXT);
+CREATE TABLE edges (src TEXT, type TEXT, dst TEXT);
+CREATE INDEX idx_nodes_label ON nodes(label);
+CREATE INDEX idx_edges_src   ON edges(src, type);</code></pre>
+            <h4>Pros</h4>
+            <ul>
+                <li><strong>Battery-included</strong>: Python ships <code>sqlite3</code> in the stdlib — no new dependency.</li>
+                <li><strong>One file, indexed, transactional, concurrent-read-safe.</strong></li>
+                <li><strong>Fast property lookups</strong> via SQL indexes; <code>CONTAINS</code> becomes <code>LIKE '%term%'</code>.</li>
+                <li><strong>Mature and ubiquitous.</strong></li>
+            </ul>
+            <h4>Cons</h4>
+            <ul>
+                <li><strong>No native traversal</strong>: Multi-hop <code>CALLS*1..2</code> must be expressed as recursive CTEs (<code>WITH RECURSIVE ...</code>) or multiple self-joins — more verbose and easy to get wrong.</li>
+                <li><strong>Impedance mismatch</strong>: Graph semantics bolted onto tables; collecting neighbor sets takes extra joins/grouping.</li>
+            </ul>
+            <div class="callout success">
+                <div class="callout-title">✓ Best when</div>
+                <p style="margin-bottom:0;">You want zero new dependencies, mostly shallow (1–2 hop) queries, and SQL is acceptable.</p>
+            </div>
+
+            <h3 id="option-d">Option D: NetworkX (In-Memory Graph + File Serialization)</h3>
+            <p><strong>NetworkX</strong> is a pure-Python graph library. You build the graph in memory as a <code>DiGraph</code> (or <code>MultiDiGraph</code>), then serialize it to a single file. Because the harness graph is directed (<code>File</code> → <code>Class</code> → <code>Method</code>) and a pair of nodes can be connected by more than one relationship type, a <code>MultiDiGraph</code> is the most faithful fit — it allows parallel edges distinguished by a <code>key</code> (the relationship type).</p>
+
+            <h4>Dependency</h4>
+            <p>NetworkX is a single pure-Python package with no compiled extensions, so installation is lightweight and cross-platform:</p>
+            <pre><code># add to requirements.txt
+networkx&gt;=3.0
+
+# or install directly
+pip install networkx</code></pre>
+            <ul>
+                <li><strong>Pure Python, no native build</strong>: unlike Kùzu, there is no C/C++ engine to compile — it installs cleanly in the harness <code>.venv</code>.</li>
+                <li><strong>Optional extras only</strong>: core graph storage/traversal needs nothing else. <code>matplotlib</code>/<code>pydot</code> are only needed for drawing, which this use case does not require.</li>
+                <li><strong>Stable, mature API</strong>: widely used, so the store/retrieve code below is unlikely to churn.</li>
+            </ul>
+
+            <h4>How Nodes &amp; Edges Are Stored</h4>
+            <p>Each graph element maps directly onto the harness schema. A node's <strong>ID</strong> is a stable string (e.g. <code>"Method:execute_cypher"</code>), and its <strong>properties</strong> (<code>label</code>, <code>name</code>, <code>path</code>, <code>hash</code>, …) are stored as an attribute dictionary on the node. Relationships become edges keyed by their type (<code>DEFINES</code>, <code>HAS_METHOD</code>, <code>CALLS</code>, <code>HANDLED_BY</code>, <code>DOCUMENTS</code>, <code>CONTAINS_AST</code>).</p>
+            <pre><code>import networkx as nx
+
+# MultiDiGraph: directed + parallel edges distinguished by `key` (relationship type)
+G = nx.MultiDiGraph()
+
+# --- Nodes: id + property dict (mirrors Neo4j node labels/properties) ---
+G.add_node("File:graph/retrieve.py", label="File",
+           path="graph/retrieve.py", hash="a1b2c3")
+G.add_node("Class:GraphRetriever",   label="Class", name="GraphRetriever")
+G.add_node("Method:execute_cypher",  label="Method", name="execute_cypher",
+           full_name="GraphRetriever.execute_cypher")
+
+# --- Edges: relationship type carried as the edge `key` + optional props ---
+G.add_edge("File:graph/retrieve.py", "Class:GraphRetriever", key="DEFINES")
+G.add_edge("Class:GraphRetriever",   "Method:execute_cypher", key="HAS_METHOD")
+G.add_edge("Method:execute_cypher",  "Method:_format_records", key="CALLS", line=68)
+
+# --- Serialize the whole graph to one file ---
+# Preferred portable/interoperable formats:
+nx.write_graphml(G, "myrepo.graphml")        # XML, tool-interoperable
+# nx.write_gexf(G, "myrepo.gexf")            # XML, Gephi-compatible
+
+# Node-link JSON (human-readable, diffable, no pickle risk):
+import json
+json.dump(nx.node_link_data(G), open("myrepo.graph.json", "w"), indent=2)</code></pre>
+            <div class="callout warning">
+                <div class="callout-title">⚠ Incremental updates &amp; hash tracking</div>
+                <p style="margin-bottom:0;">The existing contract <code>get_stored_file_hashes()</code> maps to iterating nodes and reading the <code>hash</code> attribute: <code>{d["path"]: d["hash"] for _, d in G.nodes(data=True) if d.get("label") in ("File", "Document") and d.get("hash")}</code>. On re-ingest, compare hashes, then <code>G.remove_node(...)</code> / <code>G.add_node(...)</code> the changed files before re-serializing.</p>
+            </div>
+
+            <h4>How Nodes Are Retrieved</h4>
+            <p>Every Cypher method in <code>graph/retrieve.py</code> has a direct NetworkX equivalent. Property lookups become node iteration; 1-hop traversals become successor/predecessor lookups; and the <code>CALLS*1..2</code> variable-length traversal becomes a bounded BFS — the exact capability a plain JSON file lacks.</p>
+            <pre><code>import networkx as nx
+
+G = nx.read_graphml("myrepo.graphml")   # load once, query many times
+
+# 1) Property lookup  —  MATCH (c:Class) WHERE c.name CONTAINS $term
+def find_classes(term):
+    return [n for n, d in G.nodes(data=True)
+            if d.get("label") == "Class" and term in (d.get("name") or "")]
+
+# 2) 1-hop forward  —  (f:File)-[:DEFINES]->(c:Class)
+def classes_in_file(file_id):
+    return [v for _, v, k in G.out_edges(file_id, keys=True) if k == "DEFINES"]
+
+# 3) Reverse 1-hop  —  (caller:Method)-[:CALLS]->(m)   (who calls me?)
+def callers_of(method_id):
+    return [u for u, _, k in G.in_edges(method_id, keys=True) if k == "CALLS"]
+
+# 4) Variable-length  —  (m)-[:CALLS*1..2]->(callee:Method)
+def callees_within(method_id, max_hops=2):
+    # bounded BFS following only CALLS edges
+    seen, frontier = set(), {method_id}
+    for _ in range(max_hops):
+        nxt = set()
+        for node in frontier:
+            for _, v, k in G.out_edges(node, keys=True):
+                if k == "CALLS" and v not in seen:
+                    seen.add(v); nxt.add(v)
+        frontier = nxt
+    return seen
+
+# Compose into get_method_context()-style result
+def get_method_context(method_id):
+    return {
+        "method":   G.nodes[method_id],
+        "callers":  callers_of(method_id),
+        "callees":  list(callees_within(method_id, 2)),   # == CALLS*1..2
+        "docs":     [u for u, _, k in G.in_edges(method_id, keys=True)
+                     if k == "DOCUMENTS"],
+    }</code></pre>
+            <p>NetworkX also ships higher-level helpers that collapse these walks into one call — e.g. <code>nx.descendants_at_distance(G, m, 2)</code> for reachable callees, <code>nx.single_source_shortest_path_length(G, m, cutoff=2)</code> for hop counts, and <code>nx.ego_graph(G, m, radius=2)</code> to extract a node's local neighborhood as a subgraph.</p>
+
+            <h4>Pros</h4>
+            <ul>
+                <li><strong>Rich traversal API</strong>: BFS, DFS, shortest paths, ancestors/descendants, ego graphs come for free — directly covers the <code>CALLS*1..2</code> style needs in Python with far less hand-written code than raw JSON.</li>
+                <li><strong>Pure-Python, lightweight dependency</strong>: no compiled engine, installs cleanly into the harness <code>.venv</code>.</li>
+                <li><strong>Flexible serialization</strong>: GraphML/GEXF are tool-interoperable; node-link JSON stays human-readable and diffable.</li>
+                <li><strong>Natural property model</strong>: node/edge attribute dicts map 1:1 onto Neo4j labels and properties.</li>
+            </ul>
+            <h4>Cons</h4>
+            <ul>
+                <li><strong>Full load into memory</strong> to query (same RAM ceiling as JSON); no out-of-core execution.</li>
+                <li><strong>No query language</strong>: traversals are imperative Python, so every <code>retrieve.py</code> Cypher method must be re-expressed as code.</li>
+                <li><strong>No built-in indexes</strong>: property lookups are O(n) scans unless you maintain side dicts (e.g. <code>name → node_id</code>).</li>
+                <li><strong>No transactions/concurrency</strong>: a single process owns the in-memory graph; concurrent writers need external locking.</li>
+            </ul>
+            <div class="callout security">
+                <div class="callout-title">🔒 Security Note</div>
+                <p style="margin-bottom:0;">NetworkX can also pickle graphs (<code>nx.write_gpickle</code> in older versions / <code>pickle.dump</code>), but <code>pickle</code> is unsafe to load from untrusted sources (arbitrary code execution). Never load a pickle file you did not produce yourself; prefer <strong>GraphML/GEXF/node-link JSON</strong> for shared or checked-in artifacts.</p>
+            </div>
+            <div class="callout success">
+                <div class="callout-title">✓ Best when</div>
+                <p style="margin-bottom:0;">You want programmatic graph algorithms in-process (multi-hop call chains, reachability, neighborhoods) and the graph comfortably fits in RAM.</p>
+            </div>
+        </section>
+
+        <!-- Section 3: Comparison -->
+        <section id="comparison">
+            <h2>3. Side-by-Side Comparison</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dimension</th>
+                        <th>Neo4j (current)</th>
+                        <th>JSON/JSONL (A)</th>
+                        <th>Kùzu (B)</th>
+                        <th>SQLite (C)</th>
+                        <th>NetworkX (D)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Separate server/daemon</td><td class="maybe">Yes</td><td class="yes">No</td><td class="yes">No</td><td class="yes">No</td><td class="yes">No</td></tr>
+                    <tr><td>New dependency</td><td>neo4j driver</td><td class="yes">None</td><td class="no">Yes</td><td class="yes">None (stdlib)</td><td class="no">Yes</td></tr>
+                    <tr><td>Human-readable file</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="maybe">Partly</td></tr>
+                    <tr><td>Keeps Cypher queries</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Mostly</td><td class="no">No (SQL)</td><td class="no">No (Python)</td></tr>
+                    <tr><td>Multi-hop traversal</td><td class="yes">Native</td><td class="no">Manual code</td><td class="yes">Native</td><td class="maybe">Recursive CTE</td><td class="yes">Native API</td></tr>
+                    <tr><td>Scales beyond RAM</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+                    <tr><td>Indexed property lookup</td><td class="yes">Yes</td><td class="maybe">Build yourself</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="maybe">Partial</td></tr>
+                    <tr><td>Transactions/concurrency</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="maybe">Reads yes</td><td class="no">No</td></tr>
+                    <tr><td>Setup / ops burden</td><td class="no">Highest</td><td class="yes">Lowest</td><td class="yes">Low</td><td class="yes">Low</td><td class="yes">Low</td></tr>
+                    <tr><td>Portability (copy to share)</td><td class="no">Low</td><td class="yes">Highest</td><td class="yes">High</td><td class="yes">High</td><td class="yes">High</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 4: Impact -->
+        <section id="impact">
+            <h2>4. Impact on This Codebase</h2>
+            <p>Switching from Neo4j to files touches three modules:</p>
+            <div class="card-grid">
+                <div class="card">
+                    <h4>graph/dbconn.py</h4>
+                    <p>The <code>Neo4jConnection</code>, credential handling, and per-repo database creation would be replaced by a file path (e.g. <code>./&lt;repo&gt;.graph.json</code> or <code>./&lt;repo&gt;.kuzu/</code>). Much of the env-var/auth plumbing disappears.</p>
+                </div>
+                <div class="card">
+                    <h4>graph/neo4j_inserter.py</h4>
+                    <p><code>Neo4jInserter</code> becomes a file writer. The hash-tracking contract (<code>get_stored_file_hashes</code>) is preserved as a <code>hash</code> field on each <code>File</code>/<code>Document</code> node, so incremental ingestion still works.</p>
+                </div>
+                <div class="card">
+                    <h4>graph/retrieve.py</h4>
+                    <p>The biggest rewrite. Each Cypher method (<code>get_method_context</code>, <code>get_file_context</code>, …) must be reimplemented per backend — least work with Kùzu, most with JSON/SQLite.</p>
+                </div>
+            </div>
+            <div class="callout">
+                <div class="callout-title">Retriever rewrite effort by backend</div>
+                <ul style="margin-bottom:0;">
+                    <li><strong>Kùzu (B)</strong>: near-identical Cypher — least work.</li>
+                    <li><strong>JSON (A)</strong> or <strong>NetworkX (D)</strong>: hand-written graph walks for <code>CALLS*1..2</code>.</li>
+                    <li><strong>SQLite (C)</strong>: SQL joins + recursive CTEs for deep traversals.</li>
+                </ul>
+            </div>
+            <p>The ingestion architecture itself (bulk vs. incremental, described in the <a href="ingestion_pipeline_architecture_guide.md" style="color:var(--accent-blue);">Ingestion Pipeline Architecture Guide</a>) is <strong>orthogonal</strong> — it works the same regardless of the storage backend.</p>
+        </section>
+
+        <!-- Section 5: Recommendations -->
+        <section id="recommendations">
+            <h2>5. Recommendations</h2>
+            <table>
+                <thead>
+                    <tr><th>Scenario</th><th>Recommended storage</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Smallest footprint, small repos, demos, offline/portable</td><td class="yes">Option A — JSON/JSONL</td></tr>
+                    <tr><td>Want to drop the Neo4j server but keep Cypher &amp; scale</td><td class="yes">Option B — Kùzu embedded</td></tr>
+                    <tr><td>No new dependencies, mostly shallow queries</td><td class="yes">Option C — SQLite</td></tr>
+                    <tr><td>Need in-process graph algorithms, graph fits in RAM</td><td class="yes">Option D — NetworkX</td></tr>
+                    <tr><td>Large graphs, deep multi-hop queries, multi-user, CI at scale</td><td class="maybe">Stay on Neo4j</td></tr>
+                </tbody>
+            </table>
+            <div class="callout success">
+                <div class="callout-title">✓ Pragmatic Path for BareMinimum</div>
+                <p style="margin-bottom:0;">If the goal is to eliminate the Neo4j server dependency while preserving the existing query shape, <strong>Kùzu (Option B)</strong> is the lowest-friction swap because it keeps Cypher and multi-hop traversals. If the goal is maximum simplicity and the graphs are small, <strong>JSON (Option A)</strong> best matches the "bare minimum" philosophy — at the cost of writing your own traversal logic for the <code>CALLS*1..2</code> queries.</p>
+            </div>
+        </section>
+
+        <!-- Section 6: Takeaways -->
+        <section id="takeaways">
+            <h2>6. Key Takeaways</h2>
+            <ul>
+                <li><strong>Yes, the graph can be stored as a file (or a few files).</strong> Several formats work: JSON, embedded graph DB, SQLite, or a serialized graph-library format.</li>
+                <li>The <strong>decisive factor</strong> is whether you need native <strong>multi-hop traversal</strong>; the current code relies on <code>CALLS*1..2</code>, which is cheap in Neo4j/Kùzu but manual in JSON/SQLite.</li>
+                <li>File storage <strong>removes server/auth/ops overhead and improves portability</strong>, but gives up Neo4j's <strong>query engine, indexing, out-of-core scaling, and transactions</strong>.</li>
+                <li>The <strong>ingestion pipeline and incremental hash tracking are backend-agnostic</strong>, so only the connection, insert, and retrieve layers need to change.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>&copy; BareMinimum Harness Documentation Portal — File-Based Graph Storage vs. Neo4j</p>
+        </footer>
+    </main>
+
+</body>
+</html>

@@ -14,6 +14,7 @@ from typing import Annotated, Any, Dict, Optional
 
 from tools.delete_file import delete_file
 from tools.file_search import file_search
+from tools.graph_retrieve import graph_retrieve
 from tools.list_dir import list_dir
 from tools.read_file import read_file
 from tools.tool_output_sanitizer import sanitize_tool_output
@@ -54,12 +55,10 @@ async def async_read_file(
                 kwargs["end_line"] = end_line
 
             result = await asyncio.to_thread(read_file, **kwargs)
-            return sanitize_tool_output(json.dumps(result, indent=2), path=filepath)
+            return json.dumps(result, indent=2)
         except Exception as exc:
             logger.warning("[Sub-Agent Read] Failed reading '%s': %s", filepath, exc)
-            return sanitize_tool_output(
-                json.dumps({"error": str(exc), "filepath": filepath}), path=filepath
-            )
+            return json.dumps({"error": str(exc), "filepath": filepath})
 
 
 async def async_list_dir(
@@ -70,12 +69,10 @@ async def async_list_dir(
         logger.info("[Sub-Agent Read] Listing directory: %s", path)
         try:
             result = await asyncio.to_thread(list_dir, path=path)
-            return sanitize_tool_output(json.dumps(result, indent=2), path=path)
+            return json.dumps(result, indent=2)
         except Exception as exc:
             logger.warning("[Sub-Agent Read] Failed listing dir '%s': %s", path, exc)
-            return sanitize_tool_output(
-                json.dumps({"error": str(exc), "path": path}), path=path
-            )
+            return json.dumps({"error": str(exc), "path": path})
 
 
 async def async_file_search(
@@ -87,12 +84,36 @@ async def async_file_search(
         logger.info("[Sub-Agent Read] Searching pattern '%s' in '%s'", pattern, path)
         try:
             result = await asyncio.to_thread(file_search, pattern=pattern, path=path)
-            return sanitize_tool_output(json.dumps(result, indent=2), path=path)
+            return json.dumps(result, indent=2)
         except Exception as exc:
             logger.warning("[Sub-Agent Read] Failed searching pattern '%s': %s", pattern, exc)
-            return sanitize_tool_output(
-                json.dumps({"error": str(exc), "pattern": pattern}), path=path
+            return json.dumps({"error": str(exc), "pattern": pattern})
+
+
+async def async_graph_retrieve(
+    request: Annotated[
+        Optional[str],
+        "Retrieval query or search term (entity name, Cypher query, node label, etc.)",
+    ] = None,
+    node_label: Annotated[Optional[str], "Optional node label filter"] = None,
+    cypher_query: Annotated[Optional[str], "Optional Cypher query to run directly"] = None,
+    max_depth: Annotated[Optional[int], "Optional depth for neighborhood traversal"] = None,
+) -> str:
+    """Retrieve knowledge graph data, node details, or execute Cypher queries asynchronously."""
+    async with _read_semaphore:
+        logger.info("[Sub-Agent Read] Retrieving from graph: request='%s', cypher='%s'", request, cypher_query)
+        try:
+            result = await asyncio.to_thread(
+                graph_retrieve,
+                request=request,
+                node_label=node_label,
+                cypher_query=cypher_query,
+                max_depth=max_depth,
             )
+            return json.dumps(result, indent=2)
+        except Exception as exc:
+            logger.warning("[Sub-Agent Read] Failed graph retrieve: %s", exc)
+            return json.dumps({"error": str(exc), "request": request})
 
 
 async def async_write_file(
@@ -113,15 +134,10 @@ async def async_write_file(
                 interactive=interactive,
             )
             logger.info("[Orchestrator Write Success] Finished writing: %s", filepath)
-            return sanitize_tool_output(
-                json.dumps({"status": "success", "result": result}, indent=2), path=filepath
-            )
+            return json.dumps({"status": "success", "result": result}, indent=2)
         except Exception as exc:
             logger.warning("[Orchestrator Write Failed] File '%s': %s", filepath, exc)
-            return sanitize_tool_output(
-                json.dumps({"status": "error", "error": str(exc), "filepath": filepath}),
-                path=filepath,
-            )
+            return json.dumps({"status": "error", "error": str(exc), "filepath": filepath})
 
 
 async def async_delete_file(
@@ -140,21 +156,17 @@ async def async_delete_file(
                 interactive=interactive,
             )
             logger.info("[Orchestrator Delete Success] Finished deleting: %s", filepath)
-            return sanitize_tool_output(
-                json.dumps({"status": "success", "result": result}, indent=2), path=filepath
-            )
+            return json.dumps({"status": "success", "result": result}, indent=2)
         except Exception as exc:
             logger.warning("[Orchestrator Delete Failed] Path '%s': %s", filepath, exc)
-            return sanitize_tool_output(
-                json.dumps({"status": "error", "error": str(exc), "filepath": filepath}),
-                path=filepath,
-            )
+            return json.dumps({"status": "error", "error": str(exc), "filepath": filepath})
 
 
 __all__ = [
     "async_read_file",
     "async_list_dir",
     "async_file_search",
+    "async_graph_retrieve",
     "async_write_file",
     "async_delete_file",
     "get_write_lock",
